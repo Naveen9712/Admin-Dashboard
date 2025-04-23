@@ -19,11 +19,11 @@ export default function DashboardSelector() {
     <div style={{
       minHeight: '100vh',
       backgroundColor: '#F9FAFB',
-      fontFamily: 'Arial, sans-serif',
+      fontFamily: 'lato',
       padding: '40px 20px'
     }}>
       <main style={{
-        maxWidth: '1200px',
+        maxWidth: '700px',
         margin: '0 auto'
       }}>
         <header style={{
