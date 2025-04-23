@@ -1,0 +1,6027 @@
+import React, { useState } from 'react';
+import NavItem from '../components/NavItem';
+import Link from 'next/link';
+import { Users, BookOpen, Handshake, BarChart2 } from 'lucide-react';
+
+export default function AdminDashboard() {
+  const [collapsed, setCollapsed] = useState(false);
+  const [activeSection, setActiveSection] = useState('dashboard');
+  const [activeJourneyTab, setActiveJourneyTab] = useState('overview');
+  const [selectedJourneyType, setSelectedJourneyType] = useState('f1-visa');
+  const [searchTerm, setSearchTerm] = useState('');
+  const [selectedPlatform, setSelectedPlatform] = useState('all');
+  const [selectedStatus, setSelectedStatus] = useState('all');
+  const [selectedCommentSource, setSelectedCommentSource] = useState('all');
+  
+  // Analytics dashboard state
+  const [activeAnalyticsTab, setActiveAnalyticsTab] = useState('overview');
+  const [selectedAnalyticsTimeframe, setSelectedAnalyticsTimeframe] = useState('30');
+  const [selectedVisaType, setSelectedVisaType] = useState('all');
+  const [selectedCountry, setSelectedCountry] = useState('all');
+  
+  // Settings state
+  const [activeSettingsTab, setActiveSettingsTab] = useState('general');
+  const [notificationSettings, setNotificationSettings] = useState({
+    emailAlerts: true,
+    systemAlerts: true,
+    weeklyReports: true,
+    partnerUpdates: false,
+    securityAlerts: true,
+  });
+  const [apiSettings, setApiSettings] = useState({
+    apiKey: 'sk_live_51LxJ2dGhTr7fDdkj28DHwjsl29sjKa',
+    webhookUrl: 'https://api.immihub.com/webhooks/incoming',
+    throttleRate: '100',
+    timeout: '30',
+  });
+  
+  // Compliance dashboard state
+  const [selectedCaseType, setSelectedCaseType] = useState('all');
+  const [selectedJurisdiction, setSelectedJurisdiction] = useState('all');
+  const [selectedTimeRange, setSelectedTimeRange] = useState('30');
+  const [activeAlertCategory, setActiveAlertCategory] = useState(null);
+  const [selectedDocFilter, setSelectedDocFilter] = useState('all');
+  const [complianceReportType, setComplianceReportType] = useState('summary');
+  const [complianceReportFormat, setComplianceReportFormat] = useState('pdf');
+  const [complianceReportPeriod, setComplianceReportPeriod] = useState('30');
+  
+  // Partner Integrations dashboard state
+  const [selectedServiceType, setSelectedServiceType] = useState('all');
+  const [selectedPartner, setSelectedPartner] = useState('all');
+  const [selectedDateRange, setSelectedDateRange] = useState('30');
+  const [showRequestDetailsModal, setShowRequestDetailsModal] = useState(false);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedRequests, setSelectedRequests] = useState([]);
+  
+  const toggleSidebar = () => {
+    setCollapsed(!collapsed);
+  };
+  
+  // Settings handlers
+  const handleNotificationChange = (setting) => {
+    setNotificationSettings({
+      ...notificationSettings,
+      [setting]: !notificationSettings[setting],
+    });
+  };
+  
+  const regenerateApiKey = () => {
+    const newKey = 'sk_live_' + Math.random().toString(36).substring(2, 15);
+    setApiSettings({
+      ...apiSettings,
+      apiKey: newKey,
+    });
+  };
+  
+  // Mock data for the dashboard
+  const metrics = [
+    { id: 1, title: 'Active Users', value: 847, change: '+12', color: '#EBF5FF', textColor: '#2563EB', borderColor: '#BFDBFE' },
+    { id: 2, title: 'Compliance Rate', value: '92%', change: '+2%', color: '#ECFDF5', textColor: '#059669', borderColor: '#A7F3D0' },
+    { id: 3, title: 'Pending Documents', value: 124, change: '-7', color: '#FFF7ED', textColor: '#EA580C', borderColor: '#FFEDD5' },
+    { id: 4, title: 'Support Tickets', value: 18, change: '+3', color: '#F5F3FF', textColor: '#7C3AED', borderColor: '#DDD6FE' }
+  ];
+  
+  const recentActivity = [
+    { id: 1, user: 'Michael Smith', action: 'uploaded new passport', time: '10 minutes ago', status: 'pending' },
+    { id: 2, user: 'Sarah Johnson', action: 'case status updated to "In Review"', time: '25 minutes ago', status: 'in-review' },
+    { id: 3, user: 'Raj Patel', action: 'compliance alert resolved', time: '45 minutes ago', status: 'resolved' },
+    { id: 4, user: 'Anna Garcia', action: 'completed visa application', time: '1 hour ago', status: 'completed' },
+    { id: 5, user: 'David Kim', action: 'submitted work permit documents', time: '2 hours ago', status: 'pending' }
+  ];
+  
+  const upcomingDeadlines = [
+    { id: 1, event: 'Visa Expiry - 5 users', date: 'Today', priority: 'high' },
+    { id: 2, event: 'Form I-90 Deadline', date: 'Tomorrow', priority: 'high' },
+    { id: 3, event: 'Monthly Compliance Report', date: 'Apr 07', priority: 'medium' },
+    { id: 4, event: 'Quarterly User Review', date: 'Apr 15', priority: 'low' }
+  ];
+
+  // Sample journey stages data
+  const journeyStages = {
+    'f1-visa': [
+      {
+        id: 1,
+        name: 'University Acceptance',
+        description: 'Receive acceptance letter from a SEVP-approved school',
+        order: 1
+      },
+      {
+        id: 2,
+        name: 'I-20 Form',
+        description: 'Receive I-20 form from your school to start visa process',
+        order: 2
+      },
+      {
+        id: 3,
+        name: 'SEVIS Fee Payment',
+        description: 'Pay the Student and Exchange Visitor Information System (SEVIS) fee',
+        order: 3
+      },
+      {
+        id: 4,
+        name: 'DS-160 Form',
+        description: 'Complete the online nonimmigrant visa application',
+        order: 4
+      },
+      {
+        id: 5,
+        name: 'Visa Interview',
+        description: 'Attend visa interview at US embassy or consulate',
+        order: 5
+      },
+      {
+        id: 6,
+        name: 'Arrival in US',
+        description: 'Enter the US and check in with your school',
+        order: 6
+      }
+    ],
+    'h1b-visa': [
+      {
+        id: 1,
+        name: 'Job Offer',
+        description: 'Receive job offer from US employer',
+        order: 1
+      },
+      {
+        id: 2,
+        name: 'LCA Filing',
+        description: 'Employer files Labor Condition Application with DOL',
+        order: 2
+      },
+      {
+        id: 3,
+        name: 'H1B Petition',
+        description: 'Employer files H1B petition with USCIS',
+        order: 3
+      },
+      {
+        id: 4,
+        name: 'Visa Approval',
+        description: 'Receive H1B approval notice',
+        order: 4
+      }
+    ]
+  };
+
+  // Demo social media groups data for Social Media Management section
+  const [groupsData, setGroupsData] = useState([
+    {
+      id: 1,
+      name: 'US Immigration Support',
+      platform: 'Facebook',
+      members: 2348,
+      status: 'Active',
+      createdDate: '2022-06-15',
+      description: 'Support group for immigrants navigating the US immigration system',
+      adminName: 'Michael Smith',
+      privacy: 'Public',
+      engagement: 'High'
+    },
+    {
+      id: 2,
+      name: 'H1B Visa Professionals',
+      platform: 'LinkedIn',
+      members: 1567,
+      status: 'Active',
+      createdDate: '2022-08-22',
+      description: 'Networking for H1B visa holders and applicants',
+      adminName: 'Sarah Johnson',
+      privacy: 'Private',
+      engagement: 'Medium'
+    },
+    {
+      id: 3,
+      name: 'DACA Updates',
+      platform: 'WhatsApp',
+      members: 983,
+      status: 'Active',
+      createdDate: '2022-03-10',
+      description: 'Latest news and support for DACA recipients',
+      adminName: 'Raj Patel',
+      privacy: 'Private',
+      engagement: 'High'
+    },
+    {
+      id: 4,
+      name: 'Student Visa Applicants',
+      platform: 'Facebook',
+      members: 1245,
+      status: 'Active',
+      createdDate: '2022-09-05',
+      description: 'Group for F1 visa applicants to share experiences and advice',
+      adminName: 'Anna Garcia',
+      privacy: 'Public',
+      engagement: 'Medium'
+    },
+    {
+      id: 5,
+      name: 'Immigration Law Updates',
+      platform: 'LinkedIn',
+      members: 768,
+      status: 'Inactive',
+      createdDate: '2021-11-17',
+      description: 'Professional group for immigration attorneys and experts',
+      adminName: 'David Kim',
+      privacy: 'Public',
+      engagement: 'Low'
+    },
+    {
+      id: 6,
+      name: 'Citizenship Exam Prep',
+      platform: 'Telegram',
+      members: 632,
+      status: 'Active',
+      createdDate: '2022-10-11',
+      description: 'Study group for U.S. citizenship exam preparation',
+      adminName: 'Emma Wilson',
+      privacy: 'Private',
+      engagement: 'High'
+    },
+    {
+      id: 7,
+      name: 'Green Card Holders',
+      platform: 'Facebook',
+      members: 1872,
+      status: 'Active',
+      createdDate: '2022-04-18',
+      description: 'Community for permanent residents and green card applicants',
+      adminName: 'Omar Hassan',
+      privacy: 'Public',
+      engagement: 'High'
+    },
+    {
+      id: 8,
+      name: 'Immigration News',
+      platform: 'Twitter',
+      members: 3245,
+      status: 'Active',
+      createdDate: '2021-12-05',
+      description: 'Latest immigration policy updates and news',
+      adminName: 'Lisa Chen',
+      privacy: 'Public',
+      engagement: 'Medium'
+    }
+  ]);
+
+  const platforms = [
+    'Facebook', 'LinkedIn', 'WhatsApp', 'Telegram', 'Twitter', 'Discord', 'Reddit'
+  ];
+
+  // Demo user comments data for User Comments section
+  const [commentsData, setCommentsData] = useState([
+    {
+      id: 1,
+      user: {
+        name: 'Michael Smith',
+        email: 'michael.smith@example.com', 
+        avatar: 'MS'
+      },
+      comment: 'Does anyone know if the I-765 processing time has improved recently? I submitted mine 3 months ago and still waiting.',
+      source: 'Journey',
+      sourceName: 'H1B Visa Journey',
+      date: '2023-04-03T14:32:00',
+      status: 'Active',
+      likes: 12,
+      replies: 3
+    },
+    {
+      id: 2,
+      user: {
+        name: 'Sarah Johnson',
+        email: 'sarah.johnson@example.com',
+        avatar: 'SJ'
+      },
+      comment: 'I successfully completed my citizenship interview yesterday! Thanks to everyone here for the tips and support.',
+      source: 'Social Media Group',
+      sourceName: 'US Immigration Support',
+      date: '2023-04-04T09:15:00',
+      status: 'Active',
+      likes: 45,
+      replies: 8
+    },
+    {
+      id: 3,
+      user: {
+        name: 'Raj Patel',
+        email: 'raj.patel@example.com',
+        avatar: 'RP'
+      },
+      comment: 'This USCIS update on DACA is very concerning. What does this mean for current recipients?',
+      source: 'Feed',
+      sourceName: 'User News Feed',
+      date: '2023-04-04T11:30:00',
+      status: 'Flagged',
+      likes: 7,
+      replies: 5
+    },
+    {
+      id: 4,
+      user: {
+        name: 'Anna Garcia',
+        email: 'anna.garcia@example.com',
+        avatar: 'AG'
+      },
+      comment: 'Has anyone used a lawyer for their family-based green card application? Looking for recommendations in the Boston area.',
+      source: 'Social Media Group',
+      sourceName: 'Green Card Holders',
+      date: '2023-03-15T16:45:00',
+      status: 'Active',
+      likes: 3,
+      replies: 6
+    },
+    {
+      id: 5,
+      user: {
+        name: 'David Kim',
+        email: 'david.kim@example.com',
+        avatar: 'DK'
+      },
+      comment: 'The new immigration bill is completely unfair and targets specific communities. This is discrimination!',
+      source: 'Feed',
+      sourceName: 'User News Feed',
+      date: '2023-04-01T13:20:00',
+      status: 'Flagged',
+      likes: 32,
+      replies: 17
+    },
+    {
+      id: 6,
+      user: {
+        name: 'Emma Wilson',
+        email: 'emma.wilson@example.com',
+        avatar: 'EW'
+      },
+      comment: 'Just passed my citizenship exam! The officer was very nice and the questions were exactly from the study guide.',
+      source: 'Journey',
+      sourceName: 'Citizenship Journey',
+      date: '2023-04-04T10:12:00',
+      status: 'Active',
+      likes: 28,
+      replies: 12
+    },
+    {
+      id: 7,
+      user: {
+        name: 'Omar Hassan',
+        email: 'omar.hassan@example.com',
+        avatar: 'OH'
+      },
+      comment: 'I\'ve been waiting for my EAD for 6 months now. Anyone else experiencing these delays?',
+      source: 'Social Media Group',
+      sourceName: 'H1B Visa Professionals',
+      date: '2023-04-02T13:45:00',
+      status: 'Active',
+      likes: 15,
+      replies: 9
+    },
+    {
+      id: 8,
+      user: {
+        name: 'Lisa Chen',
+        email: 'lisa.chen@example.com',
+        avatar: 'LC'
+      },
+      comment: 'This new policy is complete garbage. USCIS should be ashamed of how they treat applicants.',
+      source: 'Feed',
+      sourceName: 'User News Feed',
+      date: '2023-02-28T09:30:00',
+      status: 'Removed',
+      likes: 0,
+      replies: 0
+    },
+    {
+      id: 9,
+      user: {
+        name: 'John Miller',
+        email: 'john.miller@example.com',
+        avatar: 'JM'
+      },
+      comment: 'Has anyone received an RFE for their I-485 recently? What documents did they request?',
+      source: 'Journey',
+      sourceName: 'Family-Based Green Card Journey',
+      date: '2023-04-05T08:55:00',
+      status: 'Active',
+      likes: 6,
+      replies: 4
+    },
+    {
+      id: 10,
+      user: {
+        name: 'Sophia Rodriguez',
+        email: 'sophia.rodriguez@example.com',
+        avatar: 'SR'
+      },
+      comment: 'Just had my visa interview at the embassy in Mexico City. The process was much faster than expected!',
+      source: 'Social Media Group',
+      sourceName: 'Student Visa Applicants',
+      date: '2023-04-03T15:22:00',
+      status: 'Active',
+      likes: 19,
+      replies: 7
+    }
+  ]);
+
+  const commentSources = [
+    'Journey', 'Social Media Group', 'Feed'
+  ];
+
+  // Filter groups based on search and filters for Social Media Groups
+  const filteredGroups = groupsData.filter(group => {
+    const matchesSearch = searchTerm === '' || 
+      group.name.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      group.description.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesPlatform = selectedPlatform === 'all' || group.platform === selectedPlatform;
+    const matchesStatus = selectedStatus === 'all' || group.status.toLowerCase() === selectedStatus.toLowerCase();
+    
+    return matchesSearch && matchesPlatform && matchesStatus;
+  });
+
+  // Filter comments based on search and filters
+  const filteredComments = commentsData.filter(comment => {
+    const matchesSearch = searchTerm === '' || 
+      comment.comment.toLowerCase().includes(searchTerm.toLowerCase()) || 
+      comment.user.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
+      comment.sourceName.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesSource = selectedCommentSource === 'all' || comment.source === selectedCommentSource;
+    const matchesStatus = selectedStatus === 'all' || comment.status.toLowerCase() === selectedStatus.toLowerCase();
+    
+    return matchesSearch && matchesSource && matchesStatus;
+  });
+
+  // Format date for display
+  const formatDate = (dateString) => {
+    if (!dateString) return '';
+    const date = new Date(dateString);
+    return new Intl.DateTimeFormat('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+      hour: '2-digit',
+      minute: '2-digit'
+    }).format(date);
+  };
+
+  // Handle comment status change
+  const handleStatusChange = (commentId, newStatus) => {
+    setCommentsData(commentsData.map(comment => {
+      if (comment.id === commentId) {
+        return {...comment, status: newStatus};
+      }
+      return comment;
+    }));
+  };
+
+  // Compliance dashboard data
+  const complianceRate = {
+    current: 92,
+    previous: 90,
+    trend: '+2%',
+    status: 'good' // 'good', 'warning', 'danger'
+  };
+
+  const alertCategories = [
+    { id: 1, name: 'Document Expiration', count: 24, percentage: 38, color: '#EF4444' },
+    { id: 2, name: 'Missing Information', count: 18, percentage: 28, color: '#F59E0B' },
+    { id: 3, name: 'Policy Violations', count: 12, percentage: 19, color: '#10B981' },
+    { id: 4, name: 'Pending Verifications', count: 9, percentage: 15, color: '#3B82F6' }
+  ];
+
+  const casePriorityQueue = [
+    { 
+      id: 1, 
+      clientName: 'Michael Smith', 
+      caseId: 'C-2023-0742', 
+      issueType: 'Document Expiration', 
+      riskLevel: 'high', 
+      daysOutstanding: 12,
+      assignedTo: 'Sarah Johnson',
+      documentType: 'Passport'
+    },
+    { 
+      id: 2, 
+      clientName: 'Anna Garcia', 
+      caseId: 'C-2023-0689', 
+      issueType: 'Missing Information', 
+      riskLevel: 'medium', 
+      daysOutstanding: 8,
+      assignedTo: 'David Kim',
+      documentType: 'Employment Verification'
+    },
+    { 
+      id: 3, 
+      clientName: 'Raj Patel', 
+      caseId: 'C-2023-0705', 
+      issueType: 'Policy Violations', 
+      riskLevel: 'medium', 
+      daysOutstanding: 5,
+      assignedTo: 'Emma Wilson',
+      documentType: 'Travel History'
+    },
+    { 
+      id: 4, 
+      clientName: 'Lisa Chen', 
+      caseId: 'C-2023-0721', 
+      issueType: 'Pending Verification', 
+      riskLevel: 'low', 
+      daysOutstanding: 3,
+      assignedTo: 'Omar Hassan',
+      documentType: 'Visa'
+    },
+    { 
+      id: 5, 
+      clientName: 'John Miller', 
+      caseId: 'C-2023-0759', 
+      issueType: 'Document Expiration', 
+      riskLevel: 'high', 
+      daysOutstanding: 14,
+      assignedTo: 'Sarah Johnson',
+      documentType: 'Work Permit'
+    }
+  ];
+
+  const expirationCalendar = [
+    { 
+      id: 1, 
+      clientName: 'Michael Smith', 
+      documentType: 'Passport', 
+      expirationDate: '2023-09-15', 
+      daysRemaining: 24, 
+      status: 'warning'
+    },
+    { 
+      id: 2, 
+      clientName: 'Sarah Johnson', 
+      documentType: 'Visa', 
+      expirationDate: '2023-08-05', 
+      daysRemaining: 12, 
+      status: 'danger'
+    },
+    { 
+      id: 3, 
+      clientName: 'Raj Patel', 
+      documentType: 'Work Permit', 
+      expirationDate: '2023-10-20', 
+      daysRemaining: 59, 
+      status: 'warning'
+    },
+    { 
+      id: 4, 
+      clientName: 'Anna Garcia', 
+      documentType: 'Visa', 
+      expirationDate: '2023-12-10', 
+      daysRemaining: 110, 
+      status: 'safe'
+    },
+    { 
+      id: 5, 
+      clientName: 'David Kim', 
+      documentType: 'Passport', 
+      expirationDate: '2023-07-30', 
+      daysRemaining: 6, 
+      status: 'danger'
+    }
+  ];
+
+  const auditTrail = [
+    { 
+      id: 1, 
+      action: 'Flagged document expiration', 
+      user: 'Sarah Johnson', 
+      timestamp: '2023-07-24T09:15:23', 
+      caseId: 'C-2023-0742',
+      client: 'Michael Smith', 
+      details: 'Passport expires in less than 30 days',
+      status: 'pending'
+    },
+    { 
+      id: 2, 
+      action: 'Resolved missing information', 
+      user: 'David Kim', 
+      timestamp: '2023-07-24T11:32:45', 
+      caseId: 'C-2023-0689',
+      client: 'Anna Garcia', 
+      details: 'Added employment verification document',
+      status: 'resolved'
+    },
+    { 
+      id: 3, 
+      action: 'Escalated policy violation', 
+      user: 'Emma Wilson', 
+      timestamp: '2023-07-23T16:08:12', 
+      caseId: 'C-2023-0705',
+      client: 'Raj Patel', 
+      details: 'Travel history discrepancy requires manager review',
+      status: 'in-review'
+    },
+    { 
+      id: 4, 
+      action: 'Verified document authenticity', 
+      user: 'Omar Hassan', 
+      timestamp: '2023-07-23T14:45:38', 
+      caseId: 'C-2023-0721',
+      client: 'Lisa Chen', 
+      details: 'Visa document passed verification checks',
+      status: 'resolved'
+    },
+    { 
+      id: 5, 
+      action: 'Sent expiration reminder', 
+      user: 'Sarah Johnson', 
+      timestamp: '2023-07-22T10:22:19', 
+      caseId: 'C-2023-0759',
+      client: 'John Miller', 
+      details: 'Automated 14-day work permit expiration reminder sent',
+      status: 'pending'
+    }
+  ];
+
+  const regulatoryUpdates = [
+    {
+      id: 1,
+      title: 'USCIS Updates H-1B Registration Process',
+      source: 'USCIS',
+      relevance: ['H1B Visa'],
+      date: '2023-07-20',
+      summary: 'USCIS has announced changes to the H-1B registration process for the fiscal year 2024.',
+      reviewed: false
+    },
+    {
+      id: 2,
+      title: 'New Documentation Requirements for F-1 Students',
+      source: 'Department of State',
+      relevance: ['F1 Visa'],
+      date: '2023-07-18',
+      summary: 'The Department of State has added new documentation requirements for F-1 student visa applicants.',
+      reviewed: true
+    },
+    {
+      id: 3,
+      title: 'I-9 Form Update for Remote Workers',
+      source: 'DHS',
+      relevance: ['All Cases'],
+      date: '2023-07-15',
+      summary: 'DHS has published updated guidelines for I-9 verification for remote workers.',
+      reviewed: false
+    }
+  ];
+
+  const resolutionTimeMetrics = [
+    { category: 'Document Expiration', avgDays: 5.2, benchmark: 7, trend: 'improving' },
+    { category: 'Missing Information', avgDays: 8.7, benchmark: 10, trend: 'stable' },
+    { category: 'Policy Violations', avgDays: 12.4, benchmark: 14, trend: 'improving' },
+    { category: 'Pending Verifications', avgDays: 6.8, benchmark: 5, trend: 'declining' }
+  ];
+
+  const userComplianceScorecard = [
+    { 
+      id: 1, 
+      name: 'Sarah Johnson', 
+      openIssues: 12, 
+      avgResolutionTime: 4.8, 
+      complianceRate: 94, 
+      trend: 'improving' 
+    },
+    { 
+      id: 2, 
+      name: 'David Kim', 
+      openIssues: 8, 
+      avgResolutionTime: 7.2, 
+      complianceRate: 89, 
+      trend: 'stable' 
+    },
+    { 
+      id: 3, 
+      name: 'Emma Wilson', 
+      openIssues: 15, 
+      avgResolutionTime: 9.6, 
+      complianceRate: 83, 
+      trend: 'declining' 
+    },
+    { 
+      id: 4, 
+      name: 'Omar Hassan', 
+      openIssues: 6, 
+      avgResolutionTime: 3.5, 
+      complianceRate: 97, 
+      trend: 'improving' 
+    }
+  ];
+
+  const documentVerificationStatus = [
+    { 
+      id: 1, 
+      clientName: 'Michael Smith', 
+      documentType: 'Passport', 
+      status: 'verified', 
+      uploadDate: '2023-07-20', 
+      verificationDate: '2023-07-21', 
+      verifiedBy: 'Sarah Johnson' 
+    },
+    { 
+      id: 2, 
+      clientName: 'Anna Garcia', 
+      documentType: 'Employment Verification', 
+      status: 'in-review', 
+      uploadDate: '2023-07-23', 
+      verificationDate: null, 
+      verifiedBy: null 
+    },
+    { 
+      id: 3, 
+      clientName: 'Raj Patel', 
+      documentType: 'Travel History', 
+      status: 'rejected', 
+      uploadDate: '2023-07-19', 
+      verificationDate: '2023-07-22', 
+      verifiedBy: 'Emma Wilson' 
+    },
+    { 
+      id: 4, 
+      clientName: 'Lisa Chen', 
+      documentType: 'Visa', 
+      status: 'uploaded', 
+      uploadDate: '2023-07-24', 
+      verificationDate: null, 
+      verifiedBy: null 
+    }
+  ];
+
+  // Partner Integrations dashboard data
+  const serviceRequests = [
+    {
+      id: 'SR-2023-1425',
+      user: {
+        name: 'Michael Smith',
+        email: 'michael.smith@example.com',
+        id: 'USR-2023-0742'
+      },
+      serviceType: 'Insurance',
+      partner: 'GlobalHealth Insurance',
+      status: 'Pending',
+      dateSubmitted: '2023-07-20T09:15:00',
+      lastUpdated: '2023-07-21T14:30:00',
+      details: {
+        requestParams: {
+          coverageType: 'Health & Dental',
+          coveragePeriod: '12 months',
+          familySize: 1
+        },
+        documents: [
+          { name: 'Passport.pdf', uploaded: '2023-07-20T09:10:00' },
+          { name: 'Visa.pdf', uploaded: '2023-07-20T09:12:00' }
+        ],
+        statusHistory: [
+          { status: 'New', timestamp: '2023-07-20T09:15:00', updatedBy: 'System' },
+          { status: 'Pending', timestamp: '2023-07-21T14:30:00', updatedBy: 'Admin User' }
+        ],
+        notes: [
+          { text: 'User requested expedited processing', timestamp: '2023-07-20T09:15:00', author: 'Michael Smith' }
+        ],
+        partnerReference: 'GHI-88742'
+      }
+    },
+    {
+      id: 'SR-2023-1398',
+      user: {
+        name: 'Sarah Johnson',
+        email: 'sarah.johnson@example.com',
+        id: 'USR-2023-0689'
+      },
+      serviceType: 'Tax Filing',
+      partner: 'ExpressTax Services',
+      status: 'Completed',
+      dateSubmitted: '2023-07-15T10:22:00',
+      lastUpdated: '2023-07-22T16:45:00',
+      details: {
+        requestParams: {
+          taxYear: '2022',
+          filingStatus: 'Single',
+          stateFilings: ['California']
+        },
+        documents: [
+          { name: 'W2.pdf', uploaded: '2023-07-15T10:15:00' },
+          { name: 'BankStatements.pdf', uploaded: '2023-07-15T10:18:00' }
+        ],
+        statusHistory: [
+          { status: 'New', timestamp: '2023-07-15T10:22:00', updatedBy: 'System' },
+          { status: 'Pending', timestamp: '2023-07-16T09:05:00', updatedBy: 'Admin User' },
+          { status: 'In Progress', timestamp: '2023-07-18T11:30:00', updatedBy: 'ExpressTax API' },
+          { status: 'Completed', timestamp: '2023-07-22T16:45:00', updatedBy: 'ExpressTax API' }
+        ],
+        notes: [
+          { text: 'Tax filing completed successfully', timestamp: '2023-07-22T16:45:00', author: 'ExpressTax Services' }
+        ],
+        partnerReference: 'ETX-45921'
+      }
+    },
+    {
+      id: 'SR-2023-1410',
+      user: {
+        name: 'Raj Patel',
+        email: 'raj.patel@example.com',
+        id: 'USR-2023-0705'
+      },
+      serviceType: 'Loans',
+      partner: 'ImmiFund Financial',
+      status: 'In Progress',
+      dateSubmitted: '2023-07-18T14:05:00',
+      lastUpdated: '2023-07-23T10:15:00',
+      details: {
+        requestParams: {
+          loanAmount: '$15,000',
+          loanPurpose: 'Education',
+          loanTerm: '48 months'
+        },
+        documents: [
+          { name: 'IncomeProof.pdf', uploaded: '2023-07-18T13:55:00' },
+          { name: 'EmploymentVerification.pdf', uploaded: '2023-07-18T13:58:00' }
+        ],
+        statusHistory: [
+          { status: 'New', timestamp: '2023-07-18T14:05:00', updatedBy: 'System' },
+          { status: 'Pending', timestamp: '2023-07-19T09:30:00', updatedBy: 'Admin User' },
+          { status: 'In Progress', timestamp: '2023-07-23T10:15:00', updatedBy: 'ImmiFund API' }
+        ],
+        notes: [
+          { text: 'Credit check in progress', timestamp: '2023-07-23T10:15:00', author: 'ImmiFund Financial' }
+        ],
+        partnerReference: 'IF-67234'
+      }
+    },
+    {
+      id: 'SR-2023-1367',
+      user: {
+        name: 'Anna Garcia',
+        email: 'anna.garcia@example.com',
+        id: 'USR-2023-0621'
+      },
+      serviceType: 'Housing',
+      partner: 'NewHome Rentals',
+      status: 'Failed',
+      dateSubmitted: '2023-07-12T11:45:00',
+      lastUpdated: '2023-07-20T17:22:00',
+      details: {
+        requestParams: {
+          location: 'Boston, MA',
+          monthlyBudget: '$1,800',
+          moveInDate: '2023-09-01',
+          unitType: '1 bedroom'
+        },
+        documents: [
+          { name: 'CreditReport.pdf', uploaded: '2023-07-12T11:40:00' },
+          { name: 'EmploymentLetter.pdf', uploaded: '2023-07-12T11:42:00' }
+        ],
+        statusHistory: [
+          { status: 'New', timestamp: '2023-07-12T11:45:00', updatedBy: 'System' },
+          { status: 'Pending', timestamp: '2023-07-13T14:20:00', updatedBy: 'Admin User' },
+          { status: 'In Progress', timestamp: '2023-07-15T09:05:00', updatedBy: 'NewHome API' },
+          { status: 'Failed', timestamp: '2023-07-20T17:22:00', updatedBy: 'NewHome API' }
+        ],
+        notes: [
+          { text: 'Insufficient credit history for the requested rental price range', timestamp: '2023-07-20T17:22:00', author: 'NewHome Rentals' }
+        ],
+        partnerReference: 'NH-32567'
+      }
+    },
+    {
+      id: 'SR-2023-1432',
+      user: {
+        name: 'David Kim',
+        email: 'david.kim@example.com',
+        id: 'USR-2023-0759'
+      },
+      serviceType: 'Insurance',
+      partner: 'SecurityPlus Insurance',
+      status: 'New',
+      dateSubmitted: '2023-07-24T08:30:00',
+      lastUpdated: '2023-07-24T08:30:00',
+      details: {
+        requestParams: {
+          coverageType: 'Renter\'s Insurance',
+          coveragePeriod: '12 months',
+          propertyValue: '$25,000'
+        },
+        documents: [
+          { name: 'RentalAgreement.pdf', uploaded: '2023-07-24T08:25:00' }
+        ],
+        statusHistory: [
+          { status: 'New', timestamp: '2023-07-24T08:30:00', updatedBy: 'System' }
+        ],
+        notes: [],
+        partnerReference: null
+      }
+    }
+  ];
+  
+  const partners = [
+    {
+      id: 1,
+      name: 'GlobalHealth Insurance',
+      serviceType: 'Insurance',
+      apiStatus: 'Connected',
+      responseTime: {
+        average: '4.2s',
+        last24h: '3.8s'
+      },
+      successRate: 92,
+      lastMaintenance: '2023-07-15',
+      upcomingMaintenance: '2023-08-15'
+    },
+    {
+      id: 2,
+      name: 'ExpressTax Services',
+      serviceType: 'Tax Filing',
+      apiStatus: 'Connected',
+      responseTime: {
+        average: '2.5s',
+        last24h: '2.3s'
+      },
+      successRate: 97,
+      lastMaintenance: '2023-07-10',
+      upcomingMaintenance: null
+    },
+    {
+      id: 3,
+      name: 'ImmiFund Financial',
+      serviceType: 'Loans',
+      apiStatus: 'Connected',
+      responseTime: {
+        average: '5.7s',
+        last24h: '6.2s'
+      },
+      successRate: 88,
+      lastMaintenance: '2023-07-05',
+      upcomingMaintenance: '2023-07-30'
+    },
+    {
+      id: 4,
+      name: 'NewHome Rentals',
+      serviceType: 'Housing',
+      apiStatus: 'Degraded',
+      responseTime: {
+        average: '7.1s',
+        last24h: '9.8s'
+      },
+      successRate: 75,
+      lastMaintenance: '2023-06-30',
+      upcomingMaintenance: '2023-07-29'
+    },
+    {
+      id: 5,
+      name: 'SecurityPlus Insurance',
+      serviceType: 'Insurance',
+      apiStatus: 'Connected',
+      responseTime: {
+        average: '3.9s',
+        last24h: '3.5s'
+      },
+      successRate: 94,
+      lastMaintenance: '2023-07-12',
+      upcomingMaintenance: null
+    }
+  ];
+  
+  const partnerIntegrationAnalytics = {
+    requestVolume: [
+      { serviceType: 'Insurance', count: 87, trend: '+12%' },
+      { serviceType: 'Tax Filing', count: 56, trend: '+5%' },
+      { serviceType: 'Loans', count: 42, trend: '-3%' },
+      { serviceType: 'Housing', count: 34, trend: '+8%' },
+      { serviceType: 'Legal Services', count: 23, trend: '+15%' }
+    ],
+    completionTimes: [
+      { serviceType: 'Insurance', averageDays: 3.2 },
+      { serviceType: 'Tax Filing', averageDays: 7.5 },
+      { serviceType: 'Loans', averageDays: 12.3 },
+      { serviceType: 'Housing', averageDays: 5.8 },
+      { serviceType: 'Legal Services', averageDays: 9.1 }
+    ],
+    statusDistribution: [
+      { status: 'New', count: 35, percentage: 14 },
+      { status: 'Pending', count: 67, percentage: 28 },
+      { status: 'In Progress', count: 45, percentage: 19 },
+      { status: 'Completed', count: 78, percentage: 32 },
+      { status: 'Failed', count: 17, percentage: 7 }
+    ]
+  };
+
+  // Analytics dashboard data
+  const analyticsData = {
+    // User activity metrics
+    userActivity: {
+      activeUsers: [
+        { period: 'Daily', count: 478, change: '+32', trend: 'up' },
+        { period: 'Weekly', count: 1254, change: '+122', trend: 'up' },
+        { period: 'Monthly', count: 3857, change: '+327', trend: 'up' }
+      ],
+      newUsers: [
+        { month: 'Jan', count: 128 },
+        { month: 'Feb', count: 143 },
+        { month: 'Mar', count: 167 },
+        { month: 'Apr', count: 155 },
+        { month: 'May', count: 184 },
+        { month: 'Jun', count: 175 }
+      ],
+      userRetention: {
+        rate: 84,
+        previousRate: 81,
+        trend: 'up'
+      },
+      sessionMetrics: {
+        avgDuration: '6m 42s',
+        pagesPerSession: 5.3,
+        bounceRate: '28%'
+      }
+    },
+    
+    // Case progression statistics
+    caseProgression: {
+      totalCases: 1874,
+      statusDistribution: [
+        { status: 'New Application', count: 423, percentage: 22.6 },
+        { status: 'Document Collection', count: 352, percentage: 18.8 },
+        { status: 'Under Review', count: 267, percentage: 14.2 },
+        { status: 'Decision Pending', count: 194, percentage: 10.4 },
+        { status: 'Approved', count: 482, percentage: 25.7 },
+        { status: 'Denied', count: 87, percentage: 4.6 },
+        { status: 'On Hold', count: 69, percentage: 3.7 }
+      ],
+      completionTime: {
+        overall: 84, // days
+        byType: [
+          { type: 'F1 Visa', days: 68 },
+          { type: 'H1B Visa', days: 103 },
+          { type: 'Green Card', days: 186 },
+          { type: 'Citizenship', days: 94 }
+        ]
+      },
+      trending: [
+        { week: 'Week 1', newCases: 95, completedCases: 82 },
+        { week: 'Week 2', newCases: 102, completedCases: 91 },
+        { week: 'Week 3', newCases: 98, completedCases: 87 },
+        { week: 'Week 4', newCases: 112, completedCases: 94 }
+      ]
+    },
+    
+    // Visa type breakdown
+    visaTypeBreakdown: [
+      { type: 'F1 Visa', count: 642, percentage: 34.3 },
+      { type: 'H1B Visa', count: 487, percentage: 26.0 },
+      { type: 'Green Card', count: 318, percentage: 17.0 },
+      { type: 'B2 Tourist', count: 205, percentage: 10.9 },
+      { type: 'J1 Exchange', count: 128, percentage: 6.8 },
+      { type: 'Other Visas', count: 94, percentage: 5.0 }
+    ],
+    
+    // Platform usage statistics
+    platformUsage: {
+      deviceDistribution: [
+        { device: 'Desktop', percentage: 64 },
+        { device: 'Mobile', percentage: 31 },
+        { device: 'Tablet', percentage: 5 }
+      ],
+      browserDistribution: [
+        { browser: 'Chrome', percentage: 58 },
+        { browser: 'Safari', percentage: 22 },
+        { browser: 'Firefox', percentage: 11 },
+        { browser: 'Edge', percentage: 7 },
+        { browser: 'Other', percentage: 2 }
+      ],
+      topFeatures: [
+        { feature: 'Document Upload', usageCount: 3842 },
+        { feature: 'Status Tracking', usageCount: 2967 },
+        { feature: 'Message Center', usageCount: 2154 },
+        { feature: 'Form Filling', usageCount: 1876 },
+        { feature: 'Appointment Scheduling', usageCount: 1243 }
+      ],
+      userFeedback: {
+        averageRating: 4.3,
+        responseRate: 38,
+        keyIssues: [
+          { issue: 'Form Complexity', count: 87 },
+          { issue: 'Document Requirements', count: 65 },
+          { issue: 'Loading Speed', count: 42 }
+        ]
+      }
+    },
+    
+    // Geographic distribution
+    geographicDistribution: {
+      topCountries: [
+        { country: 'India', users: 754, percentage: 19.5 },
+        { country: 'China', users: 623, percentage: 16.2 },
+        { country: 'Mexico', users: 412, percentage: 10.7 },
+        { country: 'Philippines', users: 287, percentage: 7.4 },
+        { country: 'Brazil', users: 215, percentage: 5.6 }
+      ],
+      topStates: [
+        { state: 'California', users: 687, percentage: 17.8 },
+        { state: 'New York', users: 542, percentage: 14.1 },
+        { state: 'Texas', users: 487, percentage: 12.6 },
+        { state: 'Florida', users: 376, percentage: 9.8 },
+        { state: 'Illinois', users: 293, percentage: 7.6 }
+      ]
+    }
+  };
+
+  // Analytics helpers
+  const getStatusColor = (status) => {
+    switch(status) {
+      case 'New Application':
+      case 'New':
+        return '#3B82F6'; // Blue
+      case 'Document Collection':
+      case 'Pending':
+      case 'Under Review':
+      case 'Decision Pending':
+      case 'On Hold':
+        return '#F59E0B'; // Amber
+      case 'Approved':
+      case 'Completed':
+        return '#10B981'; // Green
+      case 'Denied':
+      case 'Failed':
+        return '#EF4444'; // Red
+      default:
+        return '#9CA3AF'; // Gray
+    }
+  };
+
+  const getVisaTypeColor = (type) => {
+    switch(type) {
+      case 'F1 Visa':
+        return '#3B82F6'; // Blue
+      case 'H1B Visa':
+        return '#EF4444'; // Red
+      case 'Green Card':
+        return '#10B981'; // Green
+      case 'B2 Tourist':
+        return '#F59E0B'; // Amber
+      case 'J1 Exchange':
+        return '#8B5CF6'; // Purple
+      default:
+        return '#9CA3AF'; // Gray
+    }
+  };
+
+  const getBrowserColor = (browser) => {
+    switch(browser) {
+      case 'Chrome':
+        return '#10B981'; // Green
+      case 'Safari':
+        return '#3B82F6'; // Blue
+      case 'Firefox':
+        return '#EF4444'; // Red
+      case 'Edge':
+        return '#F59E0B'; // Amber
+      default:
+        return '#9CA3AF'; // Gray
+    }
+  };
+
+  // Render different content based on active section
+  const renderContent = () => {
+    switch(activeSection) {
+      case 'compliance':
+        return (
+          <div>
+            <h2 style={{
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              color: '#1F2937',
+              marginBottom: '1.5rem'
+            }}>Compliance Dashboard</h2>
+            
+            {/* Filters Row */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '1.5rem',
+              alignItems: 'center'
+            }}>
+              <div style={{
+                display: 'flex',
+                gap: '1rem'
+              }}>
+                <select
+                  value={selectedCaseType}
+                  onChange={(e) => setSelectedCaseType(e.target.value)}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '0.875rem',
+                    backgroundColor: '#FFFFFF'
+                  }}
+                >
+                  <option value="all">All Case Types</option>
+                  <option value="f1-visa">F1 Visa</option>
+                  <option value="h1b-visa">H1B Visa</option>
+                  <option value="green-card">Green Card</option>
+                  <option value="citizenship">Citizenship</option>
+                </select>
+                
+                <select
+                  value={selectedJurisdiction}
+                  onChange={(e) => setSelectedJurisdiction(e.target.value)}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '0.875rem',
+                    backgroundColor: '#FFFFFF'
+                  }}
+                >
+                  <option value="all">All Jurisdictions</option>
+                  <option value="us-northeast">US Northeast</option>
+                  <option value="us-southeast">US Southeast</option>
+                  <option value="us-midwest">US Midwest</option>
+                  <option value="us-west">US West</option>
+                  <option value="international">International</option>
+                </select>
+                
+                <select
+                  value={selectedTimeRange}
+                  onChange={(e) => setSelectedTimeRange(e.target.value)}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '0.875rem',
+                    backgroundColor: '#FFFFFF'
+                  }}
+                >
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="90">Last 90 days</option>
+                  <option value="365">Last year</option>
+                </select>
+              </div>
+              
+              <div>
+                <button style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#2563EB',
+                  color: '#FFFFFF',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}>
+                  <span>📊</span>
+                  <span>Generate Report</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Row 1: Status Overview & Alert Categories */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '1.5rem',
+              marginBottom: '1.5rem'
+            }}>
+              {/* Compliance Status Overview Panel */}
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '0.5rem',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                border: '1px solid #E5E7EB',
+                padding: '1.5rem'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  marginBottom: '1rem'
+                }}>
+                  <h3 style={{
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    color: '#1F2937'
+                  }}>Compliance Rate</h3>
+                  <div style={{
+                    fontSize: '0.875rem',
+                    backgroundColor: complianceRate.status === 'good' ? '#ECFDF5' : 
+                                    complianceRate.status === 'warning' ? '#FEF3C7' : '#FEE2E2',
+                    color: complianceRate.status === 'good' ? '#059669' : 
+                           complianceRate.status === 'warning' ? '#D97706' : '#DC2626',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '9999px',
+                    fontWeight: '500'
+                  }}>
+                    {complianceRate.trend}
+                  </div>
+                </div>
+                
+                <div style={{
+                  display: 'flex',
+                  alignItems: 'center',
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{
+                    fontSize: '3rem',
+                    fontWeight: '700',
+                    color: complianceRate.status === 'good' ? '#10B981' : 
+                           complianceRate.status === 'warning' ? '#F59E0B' : '#EF4444',
+                    marginRight: '0.75rem'
+                  }}>
+                    {complianceRate.current}%
+                  </div>
+                  <div style={{
+                    fontSize: '0.875rem',
+                    color: '#6B7280'
+                  }}>
+                    <div>Previous: {complianceRate.previous}%</div>
+                    <div>30-day change: {complianceRate.trend}</div>
+                  </div>
+                </div>
+                
+                {/* Sparkline Graph placeholder */}
+                <div style={{
+                  height: '3rem',
+                  backgroundColor: '#F9FAFB',
+                  borderRadius: '0.375rem',
+                  position: 'relative',
+                  marginBottom: '1rem'
+                }}>
+                  <div style={{
+                    position: 'absolute',
+                    bottom: 0,
+                    left: 0,
+                    width: '100%',
+                    height: '100%',
+                    display: 'flex',
+                    alignItems: 'flex-end'
+                  }}>
+                    {Array.from({ length: 30 }, (_, i) => {
+                      const height = Math.floor(70 + Math.random() * 20) + '%';
+                      return (
+                        <div key={i} style={{
+                          flex: 1,
+                          backgroundColor: complianceRate.status === 'good' ? '#10B981' : 
+                                           complianceRate.status === 'warning' ? '#F59E0B' : '#EF4444',
+                          height,
+                          margin: '0 1px'
+                        }}></div>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                <div style={{
+                  fontSize: '0.75rem',
+                  color: '#6B7280',
+                  display: 'flex',
+                  justifyContent: 'space-between'
+                }}>
+                  <span>30 days ago</span>
+                  <span>Today</span>
+                </div>
+              </div>
+              
+              {/* Alert Categories Breakdown */}
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '0.5rem',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                border: '1px solid #E5E7EB',
+                padding: '1.5rem'
+              }}>
+                <div style={{
+                  marginBottom: '1rem'
+                }}>
+                  <h3 style={{
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    color: '#1F2937'
+                  }}>Alert Categories</h3>
+                </div>
+                
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-around',
+                  marginBottom: '1.5rem'
+                }}>
+                  {/* Donut chart placeholder */}
+                  <div style={{
+                    width: '8rem',
+                    height: '8rem',
+                    borderRadius: '50%',
+                    background: `conic-gradient(
+                      ${alertCategories[0].color} 0% ${alertCategories[0].percentage}%, 
+                      ${alertCategories[1].color} ${alertCategories[0].percentage}% ${alertCategories[0].percentage + alertCategories[1].percentage}%, 
+                      ${alertCategories[2].color} ${alertCategories[0].percentage + alertCategories[1].percentage}% ${alertCategories[0].percentage + alertCategories[1].percentage + alertCategories[2].percentage}%, 
+                      ${alertCategories[3].color} ${alertCategories[0].percentage + alertCategories[1].percentage + alertCategories[2].percentage}% 100%
+                    )`,
+                    position: 'relative',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center'
+                  }}>
+                    <div style={{
+                      width: '5rem',
+                      height: '5rem',
+                      borderRadius: '50%',
+                      backgroundColor: '#FFFFFF',
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      flexDirection: 'column'
+                    }}>
+                      <div style={{
+                        fontSize: '1.25rem',
+                        fontWeight: '700',
+                        color: '#1F2937'
+                      }}>
+                        {alertCategories.reduce((sum, cat) => sum + cat.count, 0)}
+                      </div>
+                      <div style={{
+                        fontSize: '0.75rem',
+                        color: '#6B7280'
+                      }}>
+                        Total
+                      </div>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  {alertCategories.map(category => (
+                    <div 
+                      key={category.id}
+                      onClick={() => setActiveAlertCategory(activeAlertCategory === category.id ? null : category.id)}
+                      style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.5rem',
+                        borderRadius: '0.25rem',
+                        backgroundColor: activeAlertCategory === category.id ? '#F9FAFB' : 'transparent',
+                        cursor: 'pointer',
+                        marginBottom: '0.5rem'
+                      }}
+                    >
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center'
+                      }}>
+                        <div style={{
+                          width: '0.75rem',
+                          height: '0.75rem',
+                          borderRadius: '50%',
+                          backgroundColor: category.color,
+                          marginRight: '0.5rem'
+                        }}></div>
+                        <div style={{
+                          fontSize: '0.875rem',
+                          color: '#374151'
+                        }}>
+                          {category.name}
+                        </div>
+                      </div>
+                      <div style={{
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#374151'
+                      }}>
+                        {category.count} ({category.percentage}%)
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+            
+            {/* Row 2: Case Priority Queue */}
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '0.5rem',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              border: '1px solid #E5E7EB',
+              padding: '1.5rem',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem'
+              }}>
+                <h3 style={{
+                  fontSize: '1rem',
+                  fontWeight: '600',
+                  color: '#1F2937'
+                }}>Case Priority Queue</h3>
+                
+                <div style={{
+                  display: 'flex',
+                  gap: '0.5rem'
+                }}>
+                  <select
+                    value={selectedDocFilter}
+                    onChange={(e) => setSelectedDocFilter(e.target.value)}
+                    style={{
+                      padding: '0.375rem 0.5rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #D1D5DB',
+                      fontSize: '0.75rem',
+                      backgroundColor: 'white'
+                    }}
+                  >
+                    <option value="all">All Types</option>
+                    <option value="document-expiration">Document Expiration</option>
+                    <option value="missing-information">Missing Information</option>
+                    <option value="policy-violation">Policy Violation</option>
+                    <option value="pending-verification">Pending Verification</option>
+                  </select>
+                  
+                  <button style={{
+                    padding: '0.375rem 0.75rem',
+                    backgroundColor: '#F3F4F6',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    fontSize: '0.75rem',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.25rem'
+                  }}>
+                    <span>↓</span>
+                    <span>Export</span>
+                  </button>
+                </div>
+              </div>
+              
+              <div style={{
+                overflowX: 'auto'
+              }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse'
+                }}>
+                  <thead>
+                    <tr style={{
+                      backgroundColor: '#F9FAFB',
+                      borderBottom: '1px solid #E5E7EB'
+                    }}>
+                      <th style={{
+                        padding: '0.75rem 1rem',
+                        textAlign: 'left',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#6B7280'
+                      }}>Client Name</th>
+                      <th style={{
+                        padding: '0.75rem 1rem',
+                        textAlign: 'left',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#6B7280'
+                      }}>Case ID</th>
+                      <th style={{
+                        padding: '0.75rem 1rem',
+                        textAlign: 'left',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#6B7280'
+                      }}>Issue Type</th>
+                      <th style={{
+                        padding: '0.75rem 1rem',
+                        textAlign: 'left',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#6B7280'
+                      }}>Risk Level</th>
+                      <th style={{
+                        padding: '0.75rem 1rem',
+                        textAlign: 'left',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#6B7280'
+                      }}>Days Outstanding</th>
+                      <th style={{
+                        padding: '0.75rem 1rem',
+                        textAlign: 'left',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#6B7280'
+                      }}>Assigned To</th>
+                      <th style={{
+                        padding: '0.75rem 1rem',
+                        textAlign: 'left',
+                        fontWeight: '500',
+                        fontSize: '0.875rem',
+                        color: '#6B7280'
+                      }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {casePriorityQueue.map((caseItem) => (
+                      <tr key={caseItem.id} style={{
+                        borderBottom: '1px solid #E5E7EB'
+                      }}>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem',
+                          fontWeight: '500'
+                        }}>
+                          {caseItem.clientName}
+                        </td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>
+                          {caseItem.caseId}
+                        </td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '0.5rem'
+                          }}>
+                            <div style={{
+                              width: '0.75rem',
+                              height: '0.75rem',
+                              borderRadius: '50%',
+                              backgroundColor: caseItem.issueType === 'Document Expiration' ? '#EF4444' :
+                                               caseItem.issueType === 'Missing Information' ? '#F59E0B' :
+                                               caseItem.issueType === 'Policy Violations' ? '#10B981' : '#3B82F6'
+                            }}></div>
+                            {caseItem.issueType}
+                          </div>
+                        </td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>
+                          <span style={{
+                            padding: '0.25rem 0.5rem',
+                            borderRadius: '9999px',
+                            fontSize: '0.75rem',
+                            fontWeight: '500',
+                            backgroundColor: caseItem.riskLevel === 'high' ? '#FEE2E2' : 
+                                             caseItem.riskLevel === 'medium' ? '#FEF3C7' : '#ECFDF5',
+                            color: caseItem.riskLevel === 'high' ? '#DC2626' : 
+                                   caseItem.riskLevel === 'medium' ? '#D97706' : '#059669'
+                          }}>
+                            {caseItem.riskLevel}
+                          </span>
+                        </td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>
+                          <span style={{
+                            color: caseItem.daysOutstanding > 10 ? '#DC2626' : 
+                                   caseItem.daysOutstanding > 5 ? '#D97706' : '#374151',
+                            fontWeight: caseItem.daysOutstanding > 5 ? '600' : 'normal'
+                          }}>
+                            {caseItem.daysOutstanding} days
+                          </span>
+                        </td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>
+                          {caseItem.assignedTo}
+                        </td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            gap: '0.5rem'
+                          }}>
+                            <button style={{
+                              padding: '0.375rem 0.75rem',
+                              backgroundColor: '#EBF5FF',
+                              color: '#1E40AF',
+                              border: 'none',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '500',
+                              cursor: 'pointer'
+                            }}>Review</button>
+                            <button style={{
+                              padding: '0.375rem 0.75rem',
+                              backgroundColor: '#ECFDF5',
+                              color: '#059669',
+                              border: 'none',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '500',
+                              cursor: 'pointer'
+                            }}>Resolve</button>
+                            <button style={{
+                              padding: '0.375rem 0.75rem',
+                              backgroundColor: '#FEF3C7',
+                              color: '#D97706',
+                              border: 'none',
+                              borderRadius: '0.375rem',
+                              fontSize: '0.75rem',
+                              fontWeight: '500',
+                              cursor: 'pointer'
+                            }}>Escalate</button>
+                          </div>
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            </div>
+            
+            {/* More components to be added */}
+            <div style={{
+              backgroundColor: '#F9FAFB',
+              borderRadius: '0.5rem',
+              padding: '2rem',
+              textAlign: 'center',
+              color: '#6B7280',
+              marginBottom: '1.5rem'
+            }}>
+              Additional compliance dashboard components will be implemented in the next phase.
+            </div>
+          </div>
+        );
+        
+      case 'user-comments':
+        return (
+          <div>
+            <h2 style={{
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              color: '#1F2937',
+              marginBottom: '1.5rem'
+            }}>User Comments</h2>
+            
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '0.5rem',
+              boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1), 0 1px 2px 0 rgba(0, 0, 0, 0.06)',
+              marginBottom: '1.5rem'
+            }}>
+              <div style={{
+                padding: '1.5rem',
+                borderBottom: '1px solid #E5E7EB'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '1rem'
+                }}>
+                  <h3 style={{
+                    fontSize: '1.125rem',
+                    fontWeight: '600',
+                    color: '#1F2937'
+                  }}>All User Comments</h3>
+                  <div style={{
+                    backgroundColor: '#EBF5FF',
+                    color: '#2563EB',
+                    fontWeight: '500',
+                    padding: '0.25rem 0.75rem',
+                    borderRadius: '9999px',
+                    fontSize: '0.75rem'
+                  }}>
+                    {filteredComments.filter(c => c.status === 'Flagged').length} Flagged Comments
+                  </div>
+                </div>
+                <div style={{
+                  display: 'flex',
+                  flexWrap: 'wrap',
+                  gap: '1rem'
+                }}>
+                  <div style={{ flex: '1', minWidth: '240px' }}>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      color: '#4B5563',
+                      marginBottom: '0.25rem'
+                    }}>
+                      Search
+                    </label>
+                    <input 
+                      type="text" 
+                      placeholder="Search comments..." 
+                      value={searchTerm}
+                      onChange={(e) => setSearchTerm(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: '0.375rem',
+                        border: '1px solid #D1D5DB',
+                        fontSize: '0.875rem'
+                      }}
+                    />
+                  </div>
+                  <div style={{ width: '180px' }}>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      color: '#4B5563',
+                      marginBottom: '0.25rem'
+                    }}>
+                      Source
+                    </label>
+                    <select 
+                      value={selectedCommentSource}
+                      onChange={(e) => setSelectedCommentSource(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: '0.375rem',
+                        border: '1px solid #D1D5DB',
+                        fontSize: '0.875rem',
+                        backgroundColor: 'white'
+                      }}
+                    >
+                      <option value="all">All Sources</option>
+                      {commentSources.map(source => (
+                        <option key={source} value={source}>{source}</option>
+                      ))}
+                    </select>
+                  </div>
+                  <div style={{ width: '180px' }}>
+                    <label style={{
+                      display: 'block',
+                      fontSize: '0.875rem',
+                      color: '#4B5563',
+                      marginBottom: '0.25rem'
+                    }}>
+                      Status
+                    </label>
+                    <select 
+                      value={selectedStatus}
+                      onChange={(e) => setSelectedStatus(e.target.value)}
+                      style={{
+                        width: '100%',
+                        padding: '0.5rem',
+                        borderRadius: '0.375rem',
+                        border: '1px solid #D1D5DB',
+                        fontSize: '0.875rem',
+                        backgroundColor: 'white'
+                      }}
+                    >
+                      <option value="all">All Status</option>
+                      <option value="active">Active</option>
+                      <option value="flagged">Flagged</option>
+                      <option value="removed">Removed</option>
+                    </select>
+                  </div>
+                </div>
+              </div>
+              
+              {filteredComments.length > 0 ? (
+                <div>
+                  {filteredComments.map(comment => (
+                    <div key={comment.id} style={{
+                      padding: '1.25rem',
+                      borderBottom: '1px solid #E5E7EB'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        gap: '1rem'
+                      }}>
+                        <div style={{
+                          width: '2.5rem',
+                          height: '2.5rem',
+                          borderRadius: '9999px',
+                          backgroundColor: '#EBF5FF',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#2563EB',
+                          fontWeight: '600',
+                          flexShrink: 0
+                        }}>
+                          {comment.user.avatar}
+                        </div>
+                        <div style={{ flex: '1' }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'flex-start',
+                            marginBottom: '0.5rem'
+                          }}>
+                            <div>
+                              <div style={{
+                                fontWeight: '500',
+                                color: '#1F2937',
+                                fontSize: '0.875rem'
+                              }}>
+                                {comment.user.name}
+                              </div>
+                              <div style={{
+                                fontSize: '0.75rem',
+                                color: '#6B7280'
+                              }}>
+                                {comment.user.email} • {formatDate(comment.date)}
+                              </div>
+                            </div>
+                            <div style={{
+                              backgroundColor: getStatusBackground(comment.status),
+                              color: getStatusColor(comment.status),
+                              fontWeight: '500',
+                              padding: '0.25rem 0.75rem',
+                              borderRadius: '9999px',
+                              fontSize: '0.75rem'
+                            }}>
+                              {comment.status}
+                            </div>
+                          </div>
+                          <div style={{
+                            fontSize: '0.875rem',
+                            color: '#1F2937',
+                            marginBottom: '0.75rem'
+                          }}>
+                            {comment.comment}
+                          </div>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <div style={{
+                              fontSize: '0.75rem',
+                              color: '#6B7280',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '1rem'
+                            }}>
+                              <div>
+                                👍 {comment.likes} Likes
+                              </div>
+                              <div>
+                                💬 {comment.replies} Replies
+                              </div>
+                              <div>
+                                Source: <span style={{color: '#4B5563'}}>{comment.sourceName}</span>
+                              </div>
+                            </div>
+                            <div style={{
+                              display: 'flex',
+                              gap: '0.5rem'
+                            }}>
+                              <select
+                                value={comment.status}
+                                onChange={(e) => handleStatusChange(comment.id, e.target.value)}
+                                style={{
+                                  padding: '0.375rem 0.5rem',
+                                  borderRadius: '0.375rem',
+                                  border: '1px solid #D1D5DB',
+                                  fontSize: '0.75rem',
+                                  backgroundColor: 'white',
+                                  cursor: 'pointer'
+                                }}
+                              >
+                                <option value="Active">Active</option>
+                                <option value="Flagged">Flag</option>
+                                <option value="Removed">Remove</option>
+                              </select>
+                              <button style={{
+                                padding: '0.375rem 0.75rem',
+                                backgroundColor: '#F3F4F6',
+                                border: 'none',
+                                borderRadius: '0.375rem',
+                                fontSize: '0.75rem',
+                                fontWeight: '500',
+                                cursor: 'pointer'
+                              }}>View</button>
+                            </div>
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              ) : (
+                <div style={{
+                  padding: '2rem',
+                  textAlign: 'center',
+                  color: '#6B7280'
+                }}>
+                  No comments match your filters
+                </div>
+              )}
+            </div>
+            
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              margin: '1.5rem 0'
+            }}>
+              <div style={{
+                fontSize: '0.875rem',
+                color: '#6B7280'
+              }}>
+                Showing {filteredComments.length} of {commentsData.length} comments
+              </div>
+              <div style={{
+                display: 'flex',
+                gap: '0.5rem'
+              }}>
+                <button style={{
+                  padding: '0.5rem 0.75rem',
+                  border: '1px solid #D1D5DB',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                  color: '#6B7280'
+                }}>Previous</button>
+                
+                <button style={{
+                  padding: '0.5rem 0.75rem',
+                  backgroundColor: '#2563EB',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}>1</button>
+                
+                <button style={{
+                  padding: '0.5rem 0.75rem',
+                  border: '1px solid #D1D5DB',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}>2</button>
+                
+                <button style={{
+                  padding: '0.5rem 0.75rem',
+                  border: '1px solid #D1D5DB',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}>Next</button>
+              </div>
+            </div>
+          </div>
+        );
+      case 'social-media-groups':
+        return (
+          <div>
+            <h2 style={{
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              color: '#1F2937',
+              marginBottom: '1.5rem'
+            }}>Social Media Groups Management</h2>
+            
+            {/* Actions and filters */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '1.5rem'
+            }}>
+              {/* Left side - Filters */}
+              <div style={{
+                display: 'flex',
+                gap: '1rem',
+                alignItems: 'center'
+              }}>
+                <div style={{
+                  position: 'relative'
+                }}>
+                  <input
+                    type="text"
+                    placeholder="Search groups..."
+                    value={searchTerm}
+                    onChange={(e) => setSearchTerm(e.target.value)}
+                    style={{
+                      padding: '0.5rem 1rem 0.5rem 2.5rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #D1D5DB',
+                      fontSize: '0.875rem',
+                      width: '16rem'
+                    }}
+                  />
+                  <span style={{
+                    position: 'absolute',
+                    left: '0.75rem',
+                    top: '50%',
+                    transform: 'translateY(-50%)',
+                    color: '#9CA3AF'
+                  }}>🔍</span>
+                </div>
+                
+                <select
+                  value={selectedPlatform}
+                  onChange={(e) => setSelectedPlatform(e.target.value)}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '0.875rem',
+                    backgroundColor: '#FFFFFF'
+                  }}
+                >
+                  <option value="all">All Platforms</option>
+                  {platforms.map((platform) => (
+                    <option key={platform} value={platform}>{platform}</option>
+                  ))}
+                </select>
+                
+                <select
+                  value={selectedStatus}
+                  onChange={(e) => setSelectedStatus(e.target.value)}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '0.875rem',
+                    backgroundColor: '#FFFFFF'
+                  }}
+                >
+                  <option value="all">All Statuses</option>
+                  <option value="active">Active</option>
+                  <option value="inactive">Inactive</option>
+                </select>
+              </div>
+              
+              {/* Right side - Actions */}
+              <div>
+                <button style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#2563EB',
+                  color: '#FFFFFF',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}>
+                  <span>+</span>
+                  <span>Create New Group</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Groups Table */}
+            <div style={{
+              backgroundColor: '#FFFFFF',
+              borderRadius: '0.5rem',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              border: '1px solid #E5E7EB',
+              overflow: 'hidden'
+            }}>
+              <table style={{
+                width: '100%',
+                borderCollapse: 'collapse'
+              }}>
+                <thead>
+                  <tr style={{
+                    backgroundColor: '#F9FAFB',
+                    borderBottom: '1px solid #E5E7EB'
+                  }}>
+                    <th style={{
+                      padding: '0.75rem 1rem',
+                      textAlign: 'left',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                      color: '#6B7280'
+                    }}>Group Name</th>
+                    <th style={{
+                      padding: '0.75rem 1rem',
+                      textAlign: 'left',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                      color: '#6B7280'
+                    }}>Platform</th>
+                    <th style={{
+                      padding: '0.75rem 1rem',
+                      textAlign: 'left',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                      color: '#6B7280'
+                    }}>Members</th>
+                    <th style={{
+                      padding: '0.75rem 1rem',
+                      textAlign: 'left',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                      color: '#6B7280'
+                    }}>Status</th>
+                    <th style={{
+                      padding: '0.75rem 1rem',
+                      textAlign: 'left',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                      color: '#6B7280'
+                    }}>Created</th>
+                    <th style={{
+                      padding: '0.75rem 1rem',
+                      textAlign: 'left',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                      color: '#6B7280'
+                    }}>Engagement</th>
+                    <th style={{
+                      padding: '0.75rem 1rem',
+                      textAlign: 'left',
+                      fontWeight: '500',
+                      fontSize: '0.875rem',
+                      color: '#6B7280'
+                    }}>Actions</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  {filteredGroups.map((group) => (
+                    <tr key={group.id} style={{
+                      borderBottom: '1px solid #E5E7EB'
+                    }}>
+                      <td style={{
+                        padding: '0.75rem 1rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500'
+                      }}>
+                        {group.name}
+                        <div style={{
+                          fontSize: '0.75rem',
+                          color: '#6B7280'
+                        }}>{group.description}</div>
+                      </td>
+                      <td style={{
+                        padding: '0.75rem 1rem',
+                        fontSize: '0.875rem'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '0.5rem'
+                        }}>
+                          {getPlatformIcon(group.platform)}
+                          {group.platform}
+                        </div>
+                      </td>
+                      <td style={{
+                        padding: '0.75rem 1rem',
+                        fontSize: '0.875rem'
+                      }}>{group.members.toLocaleString()}</td>
+                      <td style={{
+                        padding: '0.75rem 1rem',
+                        fontSize: '0.875rem'
+                      }}>
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.75rem',
+                          fontWeight: '500',
+                          backgroundColor: group.status === 'Active' ? '#ECFDF5' : '#FEF3C7',
+                          color: group.status === 'Active' ? '#059669' : '#D97706'
+                        }}>
+                          {group.status}
+                        </span>
+                      </td>
+                      <td style={{
+                        padding: '0.75rem 1rem',
+                        fontSize: '0.875rem'
+                      }}>{formatDate(group.createdDate)}</td>
+                      <td style={{
+                        padding: '0.75rem 1rem',
+                        fontSize: '0.875rem'
+                      }}>
+                        <span style={{
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.75rem',
+                          fontWeight: '500',
+                          backgroundColor: getEngagementBackground(group.engagement),
+                          color: getEngagementColor(group.engagement)
+                        }}>
+                          {group.engagement}
+                        </span>
+                      </td>
+                      <td style={{
+                        padding: '0.75rem 1rem',
+                        fontSize: '0.875rem'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          gap: '0.5rem'
+                        }}>
+                          <button style={{
+                            padding: '0.375rem 0.75rem',
+                            backgroundColor: '#F3F4F6',
+                            border: 'none',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '500',
+                            cursor: 'pointer'
+                          }}>View</button>
+                          <button style={{
+                            padding: '0.375rem 0.75rem',
+                            backgroundColor: '#EBF5FF',
+                            color: '#1E40AF',
+                            border: 'none',
+                            borderRadius: '0.375rem',
+                            fontSize: '0.75rem',
+                            fontWeight: '500',
+                            cursor: 'pointer'
+                          }}>Edit</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+
+            {/* Pagination */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              alignItems: 'center',
+              marginTop: '1.5rem'
+            }}>
+              <div style={{
+                fontSize: '0.875rem',
+                color: '#6B7280'
+              }}>
+                Showing {filteredGroups.length > 0 ? '1' : '0'} to {filteredGroups.length} of {groupsData.length} groups
+              </div>
+              <div style={{
+                display: 'flex',
+                gap: '0.5rem'
+              }}>
+                <button style={{
+                  padding: '0.5rem 0.75rem',
+                  border: '1px solid #D1D5DB',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer',
+                  color: '#6B7280'
+                }}>Previous</button>
+                
+                <button style={{
+                  padding: '0.5rem 0.75rem',
+                  backgroundColor: '#2563EB',
+                  color: '#FFFFFF',
+                  border: 'none',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}>1</button>
+                
+                <button style={{
+                  padding: '0.5rem 0.75rem',
+                  border: '1px solid #D1D5DB',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}>2</button>
+                
+                <button style={{
+                  padding: '0.5rem 0.75rem',
+                  border: '1px solid #D1D5DB',
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  cursor: 'pointer'
+                }}>Next</button>
+              </div>
+            </div>
+          </div>
+        );
+      case 'journey-management':
+        return (
+          <div>
+            <h2 style={{
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              color: '#1F2937',
+              marginBottom: '1.5rem'
+            }}>Journey Management</h2>
+            
+            {activeJourneyTab === 'overview' && (
+              <>
+                <div style={{
+                  display: 'flex',
+                  gap: '1.5rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  <div style={{
+                    flex: 1,
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    border: '1px solid #E5E7EB',
+                    padding: '1.5rem'
+                  }}>
+                    <h3 style={{
+                      fontWeight: '600',
+                      color: '#1F2937',
+                      marginBottom: '1rem'
+                    }}>Journey Types</h3>
+                    <p>Manage visa and immigration journey types for users.</p>
+                    <button 
+                      onClick={() => setActiveJourneyTab('journey-types')}
+                      style={{
+                        marginTop: '1rem',
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#2563EB',
+                        color: '#FFFFFF',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >Manage Journey Types</button>
+                  </div>
+                  
+                  <div style={{
+                    flex: 1,
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    border: '1px solid #E5E7EB',
+                    padding: '1.5rem'
+                  }}>
+                    <h3 style={{
+                      fontWeight: '600',
+                      color: '#1F2937',
+                      marginBottom: '1rem'
+                    }}>Journey Stages</h3>
+                    <p>Configure stages for each journey type with custom requirements.</p>
+                    <button 
+                      onClick={() => setActiveJourneyTab('journey-stages')}
+                      style={{
+                        marginTop: '1rem',
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#2563EB',
+                        color: '#FFFFFF',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >Manage Journey Stages</button>
+                  </div>
+                  
+                  <div style={{
+                    flex: 1,
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    border: '1px solid #E5E7EB',
+                    padding: '1.5rem'
+                  }}>
+                    <h3 style={{
+                      fontWeight: '600',
+                      color: '#1F2937',
+                      marginBottom: '1rem'
+                    }}>Content Modules</h3>
+                    <p>Create informational content modules for user journey guidance.</p>
+                    <button 
+                      onClick={() => setActiveJourneyTab('content-modules')}
+                      style={{
+                        marginTop: '1rem',
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#2563EB',
+                        color: '#FFFFFF',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        border: 'none',
+                        cursor: 'pointer'
+                      }}
+                    >Manage Content Modules</button>
+                  </div>
+                </div>
+                
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  border: '1px solid #E5E7EB',
+                  padding: '1.5rem'
+                }}>
+                  <h3 style={{
+                    fontWeight: '600',
+                    color: '#1F2937',
+                    marginBottom: '1rem'
+                  }}>Recent Journey Updates</h3>
+                  
+                  <table style={{
+                    width: '100%',
+                    borderCollapse: 'collapse'
+                  }}>
+                    <thead>
+                      <tr style={{
+                        borderBottom: '1px solid #E5E7EB'
+                      }}>
+                        <th style={{
+                          textAlign: 'left',
+                          padding: '0.75rem 1rem',
+                          color: '#6B7280',
+                          fontWeight: '500',
+                          fontSize: '0.875rem'
+                        }}>Journey Type</th>
+                        <th style={{
+                          textAlign: 'left',
+                          padding: '0.75rem 1rem',
+                          color: '#6B7280',
+                          fontWeight: '500',
+                          fontSize: '0.875rem'
+                        }}>Updated By</th>
+                        <th style={{
+                          textAlign: 'left',
+                          padding: '0.75rem 1rem',
+                          color: '#6B7280',
+                          fontWeight: '500',
+                          fontSize: '0.875rem'
+                        }}>Date</th>
+                        <th style={{
+                          textAlign: 'left',
+                          padding: '0.75rem 1rem',
+                          color: '#6B7280',
+                          fontWeight: '500',
+                          fontSize: '0.875rem'
+                        }}>Action</th>
+                      </tr>
+                    </thead>
+                    <tbody>
+                      <tr style={{
+                        borderBottom: '1px solid #E5E7EB'
+                      }}>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>H1B Visa Journey</td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>Admin User</td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>May 15, 2023</td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>Updated stages</td>
+                      </tr>
+                      <tr style={{
+                        borderBottom: '1px solid #E5E7EB'
+                      }}>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>F1 Visa Journey</td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>Admin User</td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>May 14, 2023</td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>Added new stage</td>
+                      </tr>
+                      <tr style={{
+                        borderBottom: '1px solid #E5E7EB'
+                      }}>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>Green Card Journey</td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>System Admin</td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>May 12, 2023</td>
+                        <td style={{
+                          padding: '0.75rem 1rem',
+                          fontSize: '0.875rem'
+                        }}>Created journey</td>
+                      </tr>
+                    </tbody>
+                  </table>
+                </div>
+              </>
+            )}
+
+            {activeJourneyTab === 'journey-types' && (
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '0.5rem',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                border: '1px solid #E5E7EB',
+                padding: '1.5rem'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '1.5rem'
+                }}>
+                  <div>
+                    <h3 style={{
+                      fontWeight: '600',
+                      color: '#1F2937',
+                      marginBottom: '0.25rem'
+                    }}>Journey Types</h3>
+                    <p style={{color: '#6B7280', fontSize: '0.875rem'}}>Manage visa and immigration journey types for users</p>
+                  </div>
+                  <div style={{display: 'flex', gap: '0.5rem'}}>
+                    <button
+                      onClick={() => setActiveJourneyTab('overview')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#FFFFFF',
+                        color: '#2563EB',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        border: '1px solid #2563EB',
+                        cursor: 'pointer'
+                      }}
+                    >Back to Overview</button>
+                    <button style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#2563EB',
+                      color: '#FFFFFF',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}>
+                      <span>+</span>
+                      <span>Add Journey Type</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '0.5rem',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    backgroundColor: '#F9FAFB',
+                    padding: '0.5rem 1rem',
+                    borderBottom: '1px solid #E5E7EB',
+                    display: 'flex',
+                    gap: '1rem'
+                  }}>
+                    <div style={{flex: '2', fontWeight: '500', fontSize: '0.875rem'}}>Journey Type</div>
+                    <div style={{flex: '2', fontWeight: '500', fontSize: '0.875rem'}}>Description</div>
+                    <div style={{flex: '1', fontWeight: '500', fontSize: '0.875rem'}}>Status</div>
+                    <div style={{flex: '1', fontWeight: '500', fontSize: '0.875rem'}}>Actions</div>
+                  </div>
+
+                  <div style={{
+                    padding: '1rem',
+                    borderBottom: '1px solid #E5E7EB',
+                    display: 'flex',
+                    gap: '1rem',
+                    alignItems: 'center'
+                  }}>
+                    <div style={{flex: '2'}}>F1 Visa Journey</div>
+                    <div style={{flex: '2', fontSize: '0.875rem', color: '#6B7280'}}>International student visa process for studying in the US</div>
+                    <div style={{flex: '1'}}>
+                      <span style={{
+                        backgroundColor: '#ECFDF5',
+                        color: '#2563EB',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.75rem',
+                        fontWeight: '500'
+                      }}>Active</span>
+                    </div>
+                    <div style={{flex: '1', display: 'flex', gap: '0.5rem'}}>
+                      <button style={{
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: '#F3F4F6',
+                        border: 'none',
+                        borderRadius: '0.25rem',
+                        cursor: 'pointer'
+                      }}>Edit</button>
+                      <button style={{
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: '#FEE2E2',
+                        color: '#DC2626',
+                        border: 'none',
+                        borderRadius: '0.25rem',
+                        cursor: 'pointer'
+                      }}>Delete</button>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    padding: '1rem',
+                    borderBottom: '1px solid #E5E7EB',
+                    display: 'flex',
+                    gap: '1rem',
+                    alignItems: 'center'
+                  }}>
+                    <div style={{flex: '2'}}>H1B Visa Journey</div>
+                    <div style={{flex: '2', fontSize: '0.875rem', color: '#6B7280'}}>Employment visa for specialty occupations in the US</div>
+                    <div style={{flex: '1'}}>
+                      <span style={{
+                        backgroundColor: '#ECFDF5',
+                        color: '#2563EB',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.75rem',
+                        fontWeight: '500'
+                      }}>Active</span>
+                    </div>
+                    <div style={{flex: '1', display: 'flex', gap: '0.5rem'}}>
+                      <button style={{
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: '#F3F4F6',
+                        border: 'none',
+                        borderRadius: '0.25rem',
+                        cursor: 'pointer'
+                      }}>Edit</button>
+                      <button style={{
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: '#FEE2E2',
+                        color: '#DC2626',
+                        border: 'none',
+                        borderRadius: '0.25rem',
+                        cursor: 'pointer'
+                      }}>Delete</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeJourneyTab === 'journey-stages' && (
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '0.5rem',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                border: '1px solid #E5E7EB',
+                padding: '1.5rem'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '1rem'
+                }}>
+                  <div>
+                    <h3 style={{
+                      fontWeight: '600',
+                      color: '#1F2937',
+                      marginBottom: '0.25rem'
+                    }}>Journey Stages</h3>
+                    <p style={{color: '#6B7280', fontSize: '0.875rem'}}>Configure stages for each journey type</p>
+                  </div>
+                  <div style={{display: 'flex', gap: '0.5rem'}}>
+                    <button
+                      onClick={() => setActiveJourneyTab('overview')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#FFFFFF',
+                        color: '#2563EB',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        border: '1px solid #2563EB',
+                        cursor: 'pointer'
+                      }}
+                    >Back to Overview</button>
+                  </div>
+                </div>
+
+                <div style={{display: 'flex', gap: '1.5rem', height: 'calc(100vh - 240px)'}}>
+                  {/* Left panel - Journey Types */}
+                  <div style={{
+                    width: '250px',
+                    backgroundColor: '#F9FAFB',
+                    borderRadius: '0.5rem',
+                    border: '1px solid #E5E7EB',
+                    padding: '1rem',
+                    height: '100%',
+                    overflow: 'auto'
+                  }}>
+                    <div 
+                      style={{
+                        padding: '0.75rem',
+                        borderRadius: '0.375rem',
+                        backgroundColor: selectedJourneyType === 'f1-visa' ? '#EBF5FF' : 'transparent',
+                        color: selectedJourneyType === 'f1-visa' ? '#2563EB' : '#374151',
+                        marginBottom: '0.5rem',
+                        cursor: 'pointer',
+                        fontWeight: selectedJourneyType === 'f1-visa' ? '500' : 'normal'
+                      }}
+                      onClick={() => setSelectedJourneyType('f1-visa')}
+                    >
+                      F1 Visa Journey
+                    </div>
+                    
+                    <div 
+                      style={{
+                        padding: '0.75rem',
+                        borderRadius: '0.375rem',
+                        backgroundColor: selectedJourneyType === 'h1b-visa' ? '#EBF5FF' : 'transparent',
+                        color: selectedJourneyType === 'h1b-visa' ? '#2563EB' : '#374151',
+                        marginBottom: '0.5rem',
+                        cursor: 'pointer',
+                        fontWeight: selectedJourneyType === 'h1b-visa' ? '500' : 'normal'
+                      }}
+                      onClick={() => setSelectedJourneyType('h1b-visa')}
+                    >
+                      H1B Visa Journey
+                    </div>
+                  </div>
+                  
+                  {/* Right panel - Stages */}
+                  <div style={{flex: '1', display: 'flex', flexDirection: 'column', height: '100%'}}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      marginBottom: '1rem'
+                    }}>
+                      <h3 style={{fontWeight: '600', color: '#1F2937'}}>
+                        {selectedJourneyType === 'f1-visa' ? 'F1 Visa Journey Stages' : 'H1B Visa Journey Stages'}
+                      </h3>
+                      <button style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#2563EB',
+                        color: '#FFFFFF',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        border: 'none',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem'
+                      }}>
+                        <span>+</span>
+                        <span>Add Stage</span>
+                      </button>
+                    </div>
+                    
+                    {/* Stages List */}
+                    <div style={{flex: 1, overflowY: 'auto'}}>
+                      {journeyStages[selectedJourneyType].map((stage) => (
+                        <div key={stage.id} style={{
+                          backgroundColor: '#FFFFFF',
+                          borderRadius: '0.375rem',
+                          border: '1px solid #E5E7EB',
+                          marginBottom: '0.75rem',
+                          padding: '1rem',
+                          display: 'flex',
+                          alignItems: 'center',
+                          gap: '1rem'
+                        }}>
+                          <div style={{
+                            width: '2rem',
+                            height: '2rem',
+                            borderRadius: '50%',
+                            backgroundColor: '#EBF5FF',
+                            color: '#2563EB',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center',
+                            fontWeight: '600',
+                            flexShrink: 0
+                          }}>
+                            {stage.order}
+                          </div>
+                          
+                          <div style={{flex: 1}}>
+                            <h4 style={{
+                              fontWeight: '600',
+                              color: '#1F2937',
+                              marginBottom: '0.25rem'
+                            }}>{stage.name}</h4>
+                            <p style={{
+                              fontSize: '0.875rem',
+                              color: '#6B7280',
+                              margin: 0
+                            }}>{stage.description}</p>
+                          </div>
+                          
+                          <div style={{
+                            display: 'flex',
+                            gap: '0.5rem'
+                          }}>
+                            <button style={{
+                              backgroundColor: '#F3F4F6',
+                              border: 'none',
+                              borderRadius: '0.25rem',
+                              width: '2rem',
+                              height: '2rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer'
+                            }}>
+                              ↑
+                            </button>
+                            <button style={{
+                              backgroundColor: '#F3F4F6',
+                              border: 'none',
+                              borderRadius: '0.25rem',
+                              width: '2rem',
+                              height: '2rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer'
+                            }}>
+                              ↓
+                            </button>
+                            <button style={{
+                              backgroundColor: '#F3F4F6',
+                              border: 'none',
+                              borderRadius: '0.25rem',
+                              width: '2rem',
+                              height: '2rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              cursor: 'pointer'
+                            }}>
+                              ✎
+                            </button>
+                            <button style={{
+                              backgroundColor: '#FEE2E2',
+                              border: 'none',
+                              borderRadius: '0.25rem',
+                              width: '2rem',
+                              height: '2rem',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: '#DC2626',
+                              cursor: 'pointer'
+                            }}>
+                              🗑
+                            </button>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    {/* Mobile Preview */}
+                    <div style={{
+                      marginTop: '1.5rem',
+                      backgroundColor: '#F9FAFB',
+                      borderRadius: '0.5rem', 
+                      border: '1px solid #E5E7EB',
+                      padding: '1rem'
+                    }}>
+                      <h4 style={{
+                        fontWeight: '600',
+                        color: '#1F2937',
+                        marginBottom: '1rem'
+                      }}>Mobile Preview</h4>
+                      
+                      <div style={{
+                        width: '320px',
+                        height: '400px',
+                        margin: '0 auto',
+                        border: '10px solid #1F2937',
+                        borderRadius: '2rem',
+                        overflow: 'hidden',
+                        display: 'flex',
+                        flexDirection: 'column'
+                      }}>
+                        <div style={{
+                          backgroundColor: '#2563EB',
+                          color: 'white',
+                          padding: '1rem',
+                          fontWeight: '600',
+                          textAlign: 'center'
+                        }}>
+                          {selectedJourneyType === 'f1-visa' ? 'F1 Visa Journey' : 'H1B Visa Journey'}
+                        </div>
+                        
+                        <div style={{
+                          flex: 1,
+                          backgroundColor: '#F9FAFB',
+                          padding: '1rem',
+                          overflowY: 'auto'
+                        }}>
+                          <div style={{
+                            position: 'relative',
+                            paddingLeft: '2rem'
+                          }}>
+                            {journeyStages[selectedJourneyType].map((stage, index) => (
+                              <div key={stage.id} style={{
+                                position: 'relative',
+                                marginBottom: '1.5rem'
+                              }}>
+                                <div style={{
+                                  position: 'absolute',
+                                  left: '-2rem',
+                                  top: '0',
+                                  width: '1.5rem',
+                                  height: '1.5rem',
+                                  borderRadius: '50%',
+                                  backgroundColor: '#2563EB',
+                                  color: 'white',
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  justifyContent: 'center',
+                                  fontSize: '0.75rem'
+                                }}>
+                                  {stage.order}
+                                </div>
+                                
+                                {index < journeyStages[selectedJourneyType].length - 1 && (
+                                  <div style={{
+                                    position: 'absolute',
+                                    left: '-1.25rem',
+                                    top: '1.5rem',
+                                    width: '2px',
+                                    height: '2rem',
+                                    backgroundColor: '#E5E7EB'
+                                  }}></div>
+                                )}
+                                
+                                <h5 style={{
+                                  fontSize: '0.875rem',
+                                  fontWeight: '600',
+                                  color: '#1F2937',
+                                  marginBottom: '0.25rem'
+                                }}>{stage.name}</h5>
+                                
+                                <p style={{
+                                  fontSize: '0.75rem',
+                                  color: '#6B7280',
+                                  margin: 0
+                                }}>{stage.description}</p>
+                              </div>
+                            ))}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeJourneyTab === 'content-modules' && (
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '0.5rem',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                border: '1px solid #E5E7EB',
+                padding: '1.5rem'
+              }}>
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  marginBottom: '1.5rem'
+                }}>
+                  <div>
+                    <h3 style={{
+                      fontWeight: '600',
+                      color: '#1F2937',
+                      marginBottom: '0.25rem'
+                    }}>Content Modules</h3>
+                    <p style={{color: '#6B7280', fontSize: '0.875rem'}}>Create and manage informational content modules for user journey guidance</p>
+                  </div>
+                  <div style={{display: 'flex', gap: '0.5rem'}}>
+                    <button
+                      onClick={() => setActiveJourneyTab('overview')}
+                      style={{
+                        padding: '0.5rem 1rem',
+                        backgroundColor: '#FFFFFF',
+                        color: '#2563EB',
+                        borderRadius: '0.375rem',
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        border: '1px solid #2563EB',
+                        cursor: 'pointer'
+                      }}
+                    >Back to Overview</button>
+                    <button style={{
+                      padding: '0.5rem 1rem',
+                      backgroundColor: '#2563EB',
+                      color: '#FFFFFF',
+                      borderRadius: '0.375rem',
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      border: 'none',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.25rem'
+                    }}>
+                      <span>+</span>
+                      <span>Add Content Module</span>
+                    </button>
+                  </div>
+                </div>
+
+                <div style={{
+                  border: '1px solid #E5E7EB',
+                  borderRadius: '0.5rem',
+                  overflow: 'hidden'
+                }}>
+                  <div style={{
+                    backgroundColor: '#F9FAFB',
+                    padding: '0.5rem 1rem',
+                    borderBottom: '1px solid #E5E7EB',
+                    display: 'flex',
+                    gap: '1rem'
+                  }}>
+                    <div style={{flex: '2', fontWeight: '500', fontSize: '0.875rem'}}>Module Title</div>
+                    <div style={{flex: '1', fontWeight: '500', fontSize: '0.875rem'}}>Type</div>
+                    <div style={{flex: '2', fontWeight: '500', fontSize: '0.875rem'}}>Applied To</div>
+                    <div style={{flex: '1', fontWeight: '500', fontSize: '0.875rem'}}>Last Updated</div>
+                    <div style={{flex: '1', fontWeight: '500', fontSize: '0.875rem'}}>Actions</div>
+                  </div>
+
+                  <div style={{
+                    padding: '1rem',
+                    borderBottom: '1px solid #E5E7EB',
+                    display: 'flex',
+                    gap: '1rem',
+                    alignItems: 'center'
+                  }}>
+                    <div style={{flex: '2'}}>US Visa Interview Tips</div>
+                    <div style={{flex: '1'}}>
+                      <span style={{
+                        backgroundColor: '#EBF5FF',
+                        color: '#2563EB',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.75rem',
+                        fontWeight: '500'
+                      }}>Article</span>
+                    </div>
+                    <div style={{flex: '2', fontSize: '0.875rem', color: '#6B7280'}}>F1 Visa, H1B Visa</div>
+                    <div style={{flex: '1', fontSize: '0.875rem', color: '#6B7280'}}>May 10, 2023</div>
+                    <div style={{flex: '1', display: 'flex', gap: '0.5rem'}}>
+                      <button style={{
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: '#F3F4F6',
+                        border: 'none',
+                        borderRadius: '0.25rem',
+                        cursor: 'pointer'
+                      }}>Edit</button>
+                      <button style={{
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: '#FEE2E2',
+                        color: '#DC2626',
+                        border: 'none',
+                        borderRadius: '0.25rem',
+                        cursor: 'pointer'
+                      }}>Delete</button>
+                    </div>
+                  </div>
+
+                  <div style={{
+                    padding: '1rem',
+                    borderBottom: '1px solid #E5E7EB',
+                    display: 'flex',
+                    gap: '1rem',
+                    alignItems: 'center'
+                  }}>
+                    <div style={{flex: '2'}}>Required Documents Checklist</div>
+                    <div style={{flex: '1'}}>
+                      <span style={{
+                        backgroundColor: '#FDF2F8',
+                        color: '#DB2777',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '9999px',
+                        fontSize: '0.75rem',
+                        fontWeight: '500'
+                      }}>Checklist</span>
+                    </div>
+                    <div style={{flex: '2', fontSize: '0.875rem', color: '#6B7280'}}>All Journeys</div>
+                    <div style={{flex: '1', fontSize: '0.875rem', color: '#6B7280'}}>Jun 02, 2023</div>
+                    <div style={{flex: '1', display: 'flex', gap: '0.5rem'}}>
+                      <button style={{
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: '#F3F4F6',
+                        border: 'none',
+                        borderRadius: '0.25rem',
+                        cursor: 'pointer'
+                      }}>Edit</button>
+                      <button style={{
+                        padding: '0.25rem 0.5rem',
+                        backgroundColor: '#FEE2E2',
+                        color: '#DC2626',
+                        border: 'none',
+                        borderRadius: '0.25rem',
+                        cursor: 'pointer'
+                      }}>Delete</button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      case 'partner-integrations':
+        return (
+          <div>
+            <h2 style={{
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              color: '#1F2937',
+              marginBottom: '1.5rem'
+            }}>Partner Integrations</h2>
+            
+            {/* Service Request Overview */}
+            <div style={{ marginBottom: '2rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: '600', color: '#1F2937', marginBottom: '1rem' }}>
+                Service Request Overview
+              </h3>
+              <div style={{ 
+                display: 'grid', 
+                gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))', 
+                gap: '1rem' 
+              }}>
+                <div style={{
+                  backgroundColor: 'white',
+                  borderRadius: '0.5rem',
+                  padding: '1.25rem',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ color: '#6B7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                      Active Requests
+                    </div>
+                    <div style={{ 
+                      fontSize: '1.5rem', 
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      128
+                      <span style={{ fontSize: '0.875rem', color: '#10B981' }}>+12</span>
+                    </div>
+                  </div>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    backgroundColor: '#EBF5FF',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#2563EB'
+                  }}>
+                    💬
+                  </div>
+                </div>
+                
+                <div style={{
+                  backgroundColor: 'white',
+                  borderRadius: '0.5rem',
+                  padding: '1.25rem',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ color: '#6B7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                      Pending Partner Response
+                    </div>
+                    <div style={{ 
+                      fontSize: '1.5rem', 
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      47
+                      <span style={{ fontSize: '0.875rem', color: '#EF4444' }}>-3</span>
+                    </div>
+                  </div>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FEF3C7',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#D97706'
+                  }}>
+                    ⏱️
+                  </div>
+                </div>
+                
+                <div style={{
+                  backgroundColor: 'white',
+                  borderRadius: '0.5rem',
+                  padding: '1.25rem',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ color: '#6B7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                      Completed (30 Days)
+                    </div>
+                    <div style={{ 
+                      fontSize: '1.5rem', 
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      214
+                      <span style={{ fontSize: '0.875rem', color: '#10B981' }}>+28</span>
+                    </div>
+                  </div>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    backgroundColor: '#ECFDF5',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#059669'
+                  }}>
+                    ✅
+                  </div>
+                </div>
+                
+                <div style={{
+                  backgroundColor: 'white',
+                  borderRadius: '0.5rem',
+                  padding: '1.25rem',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between'
+                }}>
+                  <div>
+                    <div style={{ color: '#6B7280', fontSize: '0.875rem', marginBottom: '0.5rem' }}>
+                      Failed/Rejected
+                    </div>
+                    <div style={{ 
+                      fontSize: '1.5rem', 
+                      fontWeight: 'bold',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '0.5rem'
+                    }}>
+                      9
+                      <span style={{ fontSize: '0.875rem', color: '#EF4444' }}>+2</span>
+                    </div>
+                  </div>
+                  <div style={{
+                    width: '48px',
+                    height: '48px',
+                    borderRadius: '50%',
+                    backgroundColor: '#FEE2E2',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    color: '#DC2626'
+                  }}>
+                    ⚠️
+                  </div>
+                </div>
+              </div>
+            </div>
+            
+            {/* Request Queue Management */}
+            <div style={{ marginBottom: '2rem' }}>
+              <div style={{
+                display: 'flex',
+                justifyContent: 'space-between',
+                alignItems: 'center',
+                marginBottom: '1rem'
+              }}>
+                <h3 style={{ fontSize: '1rem', fontWeight: '600', color: '#1F2937' }}>
+                  Request Queue Management
+                </h3>
+                <div style={{ display: 'flex', gap: '0.5rem' }}>
+                  <button style={{
+                    backgroundColor: '#2563EB',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '0.375rem',
+                    padding: '0.5rem 1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.875rem',
+                    cursor: 'pointer'
+                  }}>
+                    <span>➕</span>
+                    New Request
+                  </button>
+                  <button style={{
+                    backgroundColor: 'white',
+                    color: '#374151',
+                    border: '1px solid #D1D5DB',
+                    borderRadius: '0.375rem',
+                    padding: '0.5rem 1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.875rem',
+                    cursor: 'pointer'
+                  }}>
+                    <span>🔍</span>
+                    Filter
+                  </button>
+                  <button style={{
+                    backgroundColor: 'white',
+                    color: '#374151',
+                    border: '1px solid #D1D5DB',
+                    borderRadius: '0.375rem',
+                    padding: '0.5rem 1rem',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '0.5rem',
+                    fontSize: '0.875rem',
+                    cursor: 'pointer'
+                  }}>
+                    <span>⬇️</span>
+                    Export
+                  </button>
+                </div>
+              </div>
+              
+              {/* Status tabs */}
+              <div style={{
+                display: 'flex',
+                borderBottom: '1px solid #E5E7EB',
+                marginBottom: '1rem'
+              }}>
+                {['All', 'New', 'Pending', 'In Progress', 'Completed', 'Failed'].map((tab) => (
+                  <button
+                    key={tab}
+                    style={{
+                      padding: '0.75rem 1rem',
+                      backgroundColor: 'transparent',
+                      border: 'none',
+                      borderBottom: tab === 'All' ? '2px solid #2563EB' : '2px solid transparent',
+                      color: tab === 'All' ? '#2563EB' : '#6B7280',
+                      fontWeight: tab === 'All' ? 'bold' : 'normal',
+                      cursor: 'pointer'
+                    }}
+                  >
+                    {tab}
+                  </button>
+                ))}
+              </div>
+              
+              {/* Data table */}
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '0.5rem',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                overflow: 'hidden'
+              }}>
+                <table style={{
+                  width: '100%',
+                  borderCollapse: 'collapse',
+                  fontSize: '0.875rem'
+                }}>
+                  <thead>
+                    <tr style={{ backgroundColor: '#F9FAFB' }}>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB' }}>Request ID</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB' }}>User</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB' }}>Service Type</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB' }}>Partner</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB' }}>Status</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB' }}>Date Submitted</th>
+                      <th style={{ padding: '0.75rem 1rem', textAlign: 'left', borderBottom: '1px solid #E5E7EB' }}>Actions</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
+                      <td style={{ padding: '0.75rem 1rem' }}>SR-2023-05678</td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            backgroundColor: '#E5E7EB',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <span style={{ fontSize: '0.75rem' }}>M</span>
+                          </div>
+                          <span>Maria Garcia</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span>🛡️</span>
+                          <span>Insurance</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>SafeGuard Insurance</td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <span style={{
+                          backgroundColor: '#DBEAFE',
+                          color: '#1E40AF',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.75rem',
+                          fontWeight: '500'
+                        }}>
+                          New
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>Jun 10, 2023, 02:30 PM</td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button style={{
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            color: '#2563EB',
+                            cursor: 'pointer',
+                            padding: '0.25rem',
+                            borderRadius: '0.25rem'
+                          }}>
+                            👁️
+                          </button>
+                          <button style={{
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            color: '#F59E0B',
+                            cursor: 'pointer',
+                            padding: '0.25rem',
+                            borderRadius: '0.25rem'
+                          }}>
+                            🔔
+                          </button>
+                          <button style={{
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            color: '#EF4444',
+                            cursor: 'pointer',
+                            padding: '0.25rem',
+                            borderRadius: '0.25rem'
+                          }}>
+                            ❌
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                    <tr style={{ borderBottom: '1px solid #E5E7EB' }}>
+                      <td style={{ padding: '0.75rem 1rem' }}>SR-2023-05679</td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <div style={{
+                            width: '24px',
+                            height: '24px',
+                            borderRadius: '50%',
+                            backgroundColor: '#E5E7EB',
+                            display: 'flex',
+                            alignItems: 'center',
+                            justifyContent: 'center'
+                          }}>
+                            <span style={{ fontSize: '0.75rem' }}>J</span>
+                          </div>
+                          <span>James Wilson</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '0.5rem' }}>
+                          <span>📝</span>
+                          <span>Tax Filing</span>
+                        </div>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>ExpertTax Solutions</td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <span style={{
+                          backgroundColor: '#FEF3C7',
+                          color: '#B45309',
+                          padding: '0.25rem 0.5rem',
+                          borderRadius: '9999px',
+                          fontSize: '0.75rem',
+                          fontWeight: '500'
+                        }}>
+                          Pending
+                        </span>
+                      </td>
+                      <td style={{ padding: '0.75rem 1rem' }}>Jun 9, 2023, 10:15 AM</td>
+                      <td style={{ padding: '0.75rem 1rem' }}>
+                        <div style={{ display: 'flex', gap: '0.5rem' }}>
+                          <button style={{
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            color: '#2563EB',
+                            cursor: 'pointer',
+                            padding: '0.25rem',
+                            borderRadius: '0.25rem'
+                          }}>
+                            👁️
+                          </button>
+                          <button style={{
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            color: '#F59E0B',
+                            cursor: 'pointer',
+                            padding: '0.25rem',
+                            borderRadius: '0.25rem'
+                          }}>
+                            🔔
+                          </button>
+                          <button style={{
+                            backgroundColor: 'transparent',
+                            border: 'none',
+                            color: '#EF4444',
+                            cursor: 'pointer',
+                            padding: '0.25rem',
+                            borderRadius: '0.25rem'
+                          }}>
+                            ❌
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  </tbody>
+                </table>
+                
+                <div style={{
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  padding: '0.75rem 1rem',
+                  borderTop: '1px solid #E5E7EB'
+                }}>
+                  <div style={{ color: '#6B7280', fontSize: '0.875rem' }}>
+                    Showing 1 to 2 of 2 entries
+                  </div>
+                  <div style={{ display: 'flex', gap: '0.25rem' }}>
+                    <button style={{
+                      backgroundColor: '#F9FAFB',
+                      color: '#374151',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '0.375rem',
+                      padding: '0.375rem 0.75rem',
+                      fontSize: '0.875rem',
+                      cursor: 'pointer'
+                    }}>
+                      Previous
+                    </button>
+                    <button style={{
+                      backgroundColor: '#2563EB',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '0.375rem',
+                      padding: '0.375rem 0.75rem',
+                      fontSize: '0.875rem',
+                      cursor: 'pointer'
+                    }}>
+                      1
+                    </button>
+                    <button style={{
+                      backgroundColor: '#F9FAFB',
+                      color: '#374151',
+                      border: '1px solid #D1D5DB',
+                      borderRadius: '0.375rem',
+                      padding: '0.375rem 0.75rem',
+                      fontSize: '0.875rem',
+                      cursor: 'pointer'
+                    }}>
+                      Next
+                    </button>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Partner Status Integration */}
+            <div style={{ marginBottom: '2rem' }}>
+              <h3 style={{ fontSize: '1rem', fontWeight: '600', color: '#1F2937', marginBottom: '1rem' }}>
+                Partner Status Integration
+              </h3>
+              <div style={{
+                backgroundColor: 'white',
+                borderRadius: '0.5rem',
+                boxShadow: '0 1px 3px rgba(0, 0, 0, 0.1)',
+                padding: '1.25rem'
+              }}>
+                {/* Partner selector */}
+                <div style={{ marginBottom: '1rem' }}>
+                  <label style={{ display: 'block', marginBottom: '0.5rem', fontSize: '0.875rem', fontWeight: 'medium', color: '#374151' }}>
+                    Select Partner:
+                  </label>
+                  <select
+                    style={{
+                      width: '100%',
+                      padding: '0.5rem',
+                      borderRadius: '0.375rem',
+                      border: '1px solid #D1D5DB',
+                      backgroundColor: 'white',
+                      fontSize: '0.875rem'
+                    }}
+                  >
+                    <option value="all">All Partners</option>
+                    <option value="1">SafeGuard Insurance</option>
+                    <option value="2">ExpertTax Solutions</option>
+                    <option value="3">ImmiFund Capital</option>
+                  </select>
+                </div>
+                
+                {/* Partner status cards */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))',
+                  gap: '1rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  <div style={{
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '0.5rem',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.75rem'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <h4 style={{ fontWeight: 'bold', fontSize: '1rem' }}>SafeGuard Insurance</h4>
+                      <span style={{
+                        backgroundColor: '#D1FAE5',
+                        color: '#065F46',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '1rem',
+                        fontSize: '0.75rem',
+                        fontWeight: 'medium',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem'
+                      }}>
+                        ✓ Online
+                      </span>
+                    </div>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      color: '#6B7280'
+                    }}>
+                      Last sync: 5 minutes ago
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      gap: '1rem',
+                      fontSize: '0.875rem'
+                    }}>
+                      <div>
+                        <div style={{ color: '#6B7280' }}>API Status</div>
+                        <div style={{ fontWeight: 'medium', color: '#065F46' }}>Operational</div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#6B7280' }}>Response Time</div>
+                        <div style={{ fontWeight: 'medium' }}>245 ms</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
+                      <button style={{
+                        backgroundColor: '#EFF6FF',
+                        color: '#2563EB',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        padding: '0.375rem 0.75rem',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        flexGrow: 1,
+                        justifyContent: 'center'
+                      }}>
+                        👁️ View Details
+                      </button>
+                      <button style={{
+                        backgroundColor: '#F9FAFB',
+                        color: '#374151',
+                        border: '1px solid #D1D5DB',
+                        borderRadius: '0.375rem',
+                        padding: '0.375rem 0.75rem',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        flexGrow: 1,
+                        justifyContent: 'center'
+                      }}>
+                        🔄 Test Connection
+                      </button>
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    border: '1px solid #E5E7EB',
+                    borderRadius: '0.5rem',
+                    padding: '1rem',
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '0.75rem'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }}>
+                      <h4 style={{ fontWeight: 'bold', fontSize: '1rem' }}>ExpertTax Solutions</h4>
+                      <span style={{
+                        backgroundColor: '#FEF3C7',
+                        color: '#B45309',
+                        padding: '0.25rem 0.5rem',
+                        borderRadius: '1rem',
+                        fontSize: '0.75rem',
+                        fontWeight: 'medium',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem'
+                      }}>
+                        ⚠️ Degraded
+                      </span>
+                    </div>
+                    <div style={{
+                      fontSize: '0.875rem',
+                      color: '#6B7280'
+                    }}>
+                      Last sync: 17 minutes ago
+                    </div>
+                    <div style={{
+                      display: 'flex',
+                      gap: '1rem',
+                      fontSize: '0.875rem'
+                    }}>
+                      <div>
+                        <div style={{ color: '#6B7280' }}>API Status</div>
+                        <div style={{ fontWeight: 'medium', color: '#B45309' }}>Intermittent</div>
+                      </div>
+                      <div>
+                        <div style={{ color: '#6B7280' }}>Response Time</div>
+                        <div style={{ fontWeight: 'medium' }}>1240 ms</div>
+                      </div>
+                    </div>
+                    <div style={{ display: 'flex', gap: '0.5rem', marginTop: 'auto' }}>
+                      <button style={{
+                        backgroundColor: '#EFF6FF',
+                        color: '#2563EB',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        padding: '0.375rem 0.75rem',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        flexGrow: 1,
+                        justifyContent: 'center'
+                      }}>
+                        👁️ View Details
+                      </button>
+                      <button style={{
+                        backgroundColor: '#F9FAFB',
+                        color: '#374151',
+                        border: '1px solid #D1D5DB',
+                        borderRadius: '0.375rem',
+                        padding: '0.375rem 0.75rem',
+                        fontSize: '0.75rem',
+                        cursor: 'pointer',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        flexGrow: 1,
+                        justifyContent: 'center'
+                      }}>
+                        🔄 Test Connection
+                      </button>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            </div>
+          </div>
+        );
+      case 'settings':
+        return (
+          <div style={{ padding: '1.5rem' }}>
+            <h2 style={{ fontSize: '1.5rem', fontWeight: '600', marginBottom: '1.5rem' }}>Settings</h2>
+            
+            {/* Tabs */}
+            <div style={{ 
+              display: 'flex', 
+              borderBottom: '1px solid #e5e7eb', 
+              marginBottom: '1.5rem' 
+            }}>
+              {['general', 'notifications', 'api', 'security', 'users', 'billing'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveSettingsTab(tab)}
+                  style={{
+                    padding: '0.75rem 1rem',
+                    fontWeight: activeSettingsTab === tab ? '600' : '400',
+                    color: activeSettingsTab === tab ? '#2563eb' : '#6b7280',
+                    borderBottom: activeSettingsTab === tab ? '2px solid #2563eb' : 'none',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textTransform: 'capitalize'
+                  }}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+
+            {/* Tab Content */}
+            {activeSettingsTab === 'general' && (
+              <div>
+                <div style={{ marginBottom: '2rem' }}>
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>Organization Details</h3>
+                  <div style={{ 
+                    backgroundColor: 'white', 
+                    borderRadius: '0.5rem', 
+                    padding: '1.5rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                  }}>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Organization Name</label>
+                      <input 
+                        type="text" 
+                        defaultValue="ImmiHub Administration"
+                        style={{ 
+                          width: '100%', 
+                          padding: '0.5rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.375rem'
+                        }}
+                      />
+                    </div>
+                    
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Admin Email</label>
+                      <input 
+                        type="email" 
+                        defaultValue="admin@immihub.com"
+                        style={{ 
+                          width: '100%', 
+                          padding: '0.5rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.375rem'
+                        }}
+                      />
+                    </div>
+                    
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Timezone</label>
+                      <select 
+                        defaultValue="America/New_York"
+                        style={{ 
+                          width: '100%', 
+                          padding: '0.5rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.375rem'
+                        }}
+                      >
+                        <option value="America/New_York">Eastern Time (ET)</option>
+                        <option value="America/Chicago">Central Time (CT)</option>
+                        <option value="America/Denver">Mountain Time (MT)</option>
+                        <option value="America/Los_Angeles">Pacific Time (PT)</option>
+                        <option value="Asia/Tokyo">Japan Standard Time (JST)</option>
+                      </select>
+                    </div>
+                    
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Date Format</label>
+                      <select 
+                        defaultValue="MM/DD/YYYY"
+                        style={{ 
+                          width: '100%', 
+                          padding: '0.5rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.375rem'
+                        }}
+                      >
+                        <option value="MM/DD/YYYY">MM/DD/YYYY</option>
+                        <option value="DD/MM/YYYY">DD/MM/YYYY</option>
+                        <option value="YYYY-MM-DD">YYYY-MM-DD</option>
+                      </select>
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>System Preferences</h3>
+                  <div style={{ 
+                    backgroundColor: 'white', 
+                    borderRadius: '0.5rem', 
+                    padding: '1.5rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                  }}>
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Default Dashboard</label>
+                      <select 
+                        defaultValue="admin"
+                        style={{ 
+                          width: '100%', 
+                          padding: '0.5rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.375rem'
+                        }}
+                      >
+                        <option value="admin">Admin Dashboard</option>
+                        <option value="partners">Partner Integrations</option>
+                        <option value="compliance">Compliance Dashboard</option>
+                      </select>
+                    </div>
+                    
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Session Timeout (minutes)</label>
+                      <input 
+                        type="number" 
+                        defaultValue="30"
+                        style={{ 
+                          width: '100%', 
+                          padding: '0.5rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.375rem'
+                        }}
+                      />
+                    </div>
+
+                    <div style={{ marginBottom: '1rem' }}>
+                      <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                        <input 
+                          type="checkbox" 
+                          defaultChecked={true}
+                          style={{ marginRight: '0.5rem' }}
+                        />
+                        Enable dark mode
+                      </label>
+                    </div>
+
+                    <div>
+                      <label style={{ display: 'flex', alignItems: 'center', cursor: 'pointer' }}>
+                        <input 
+                          type="checkbox" 
+                          defaultChecked={true}
+                          style={{ marginRight: '0.5rem' }}
+                        />
+                        Show guided tours for new users
+                      </label>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSettingsTab === 'notifications' && (
+              <div>
+                <div style={{ marginBottom: '2rem' }}>
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>Notification Preferences</h3>
+                  <div style={{ 
+                    backgroundColor: 'white', 
+                    borderRadius: '0.5rem', 
+                    padding: '1.5rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                  }}>
+                    {Object.entries({
+                      'Email Alerts': 'emailAlerts',
+                      'System Alerts': 'systemAlerts',
+                      'Weekly Reports': 'weeklyReports',
+                      'Partner Updates': 'partnerUpdates',
+                      'Security Alerts': 'securityAlerts'
+                    }).map(([label, key]) => (
+                      <div key={key} style={{ marginBottom: '1rem', display: 'flex', justifyContent: 'space-between', alignItems: 'center' }}>
+                        <span>{label}</span>
+                        <label className="switch" style={{ position: 'relative', display: 'inline-block', width: '48px', height: '24px' }}>
+                          <input 
+                            type="checkbox" 
+                            checked={notificationSettings[key]}
+                            onChange={() => handleNotificationChange(key)}
+                            style={{ opacity: 0, width: 0, height: 0 }}
+                          />
+                          <span style={{
+                            position: 'absolute',
+                            cursor: 'pointer',
+                            top: 0,
+                            left: 0,
+                            right: 0,
+                            bottom: 0,
+                            backgroundColor: notificationSettings[key] ? '#2563eb' : '#e5e7eb',
+                            transition: '0.4s',
+                            borderRadius: '24px',
+                          }}>
+                            <span style={{
+                              position: 'absolute',
+                              content: '""',
+                              height: '16px',
+                              width: '16px',
+                              left: notificationSettings[key] ? '28px' : '4px',
+                              bottom: '4px',
+                              backgroundColor: 'white',
+                              borderRadius: '50%',
+                              transition: '0.4s'
+                            }}></span>
+                          </span>
+                        </label>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+            {activeSettingsTab === 'api' && (
+              <div>
+                <div style={{ marginBottom: '2rem' }}>
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>API Configuration</h3>
+                  <div style={{ 
+                    backgroundColor: 'white', 
+                    borderRadius: '0.5rem', 
+                    padding: '1.5rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                  }}>
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>API Key</label>
+                      <div style={{ display: 'flex', gap: '0.5rem' }}>
+                        <input 
+                          type="password" 
+                          value={apiSettings.apiKey}
+                          readOnly
+                          style={{ 
+                            flexGrow: 1,
+                            padding: '0.5rem',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '0.375rem'
+                          }}
+                        />
+                        <button 
+                          onClick={regenerateApiKey}
+                          style={{
+                            backgroundColor: '#f3f4f6',
+                            border: '1px solid #d1d5db',
+                            borderRadius: '0.375rem',
+                            padding: '0 0.75rem',
+                            fontSize: '0.875rem'
+                          }}
+                        >
+                          Regenerate
+                        </button>
+                      </div>
+                      <p style={{ marginTop: '0.5rem', fontSize: '0.875rem', color: '#6b7280' }}>
+                        This key provides full access to your organization's API. Keep it secure.
+                      </p>
+                    </div>
+                    
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>Webhook URL</label>
+                      <input 
+                        type="text" 
+                        value={apiSettings.webhookUrl}
+                        onChange={(e) => setApiSettings({...apiSettings, webhookUrl: e.target.value})}
+                        style={{ 
+                          width: '100%', 
+                          padding: '0.5rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.375rem'
+                        }}
+                      />
+                    </div>
+                    
+                    <div style={{ marginBottom: '1.5rem' }}>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>API Rate Limit (requests per minute)</label>
+                      <input 
+                        type="number" 
+                        value={apiSettings.throttleRate}
+                        onChange={(e) => setApiSettings({...apiSettings, throttleRate: e.target.value})}
+                        style={{ 
+                          width: '100%', 
+                          padding: '0.5rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.375rem'
+                        }}
+                      />
+                    </div>
+                    
+                    <div>
+                      <label style={{ display: 'block', marginBottom: '0.5rem', fontWeight: '500' }}>API Timeout (seconds)</label>
+                      <input 
+                        type="number" 
+                        value={apiSettings.timeout}
+                        onChange={(e) => setApiSettings({...apiSettings, timeout: e.target.value})}
+                        style={{ 
+                          width: '100%', 
+                          padding: '0.5rem',
+                          border: '1px solid #d1d5db',
+                          borderRadius: '0.375rem'
+                        }}
+                      />
+                    </div>
+                  </div>
+                </div>
+                
+                <div>
+                  <h3 style={{ fontSize: '1.125rem', fontWeight: '600', marginBottom: '1rem' }}>API Documentation</h3>
+                  <div style={{ 
+                    backgroundColor: 'white', 
+                    borderRadius: '0.5rem', 
+                    padding: '1.5rem',
+                    boxShadow: '0 1px 3px 0 rgba(0, 0, 0, 0.1)'
+                  }}>
+                    <p style={{ marginBottom: '1rem' }}>
+                      Access our comprehensive API documentation to integrate ImmiHub services with your systems.
+                    </p>
+                    <button
+                      style={{
+                        backgroundColor: '#2563eb',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '0.375rem',
+                        padding: '0.5rem 1rem',
+                        cursor: 'pointer'
+                      }}
+                    >
+                      View API Documentation
+                    </button>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      case 'analytics':
+        return (
+          <div>
+            <h2 style={{
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              color: '#1F2937',
+              marginBottom: '1.5rem'
+            }}>Analytics Dashboard</h2>
+            
+            {/* Filters Row */}
+            <div style={{
+              display: 'flex',
+              justifyContent: 'space-between',
+              marginBottom: '1.5rem',
+              alignItems: 'center'
+            }}>
+              <div style={{
+                display: 'flex',
+                gap: '1rem'
+              }}>
+                <select
+                  value={selectedVisaType}
+                  onChange={(e) => setSelectedVisaType(e.target.value)}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '0.875rem',
+                    backgroundColor: '#FFFFFF'
+                  }}
+                >
+                  <option value="all">All Visa Types</option>
+                  <option value="f1-visa">F1 Visa</option>
+                  <option value="h1b-visa">H1B Visa</option>
+                  <option value="green-card">Green Card</option>
+                  <option value="b2-tourist">B2 Tourist</option>
+                  <option value="j1-exchange">J1 Exchange</option>
+                </select>
+                
+                <select
+                  value={selectedAnalyticsTimeframe}
+                  onChange={(e) => setSelectedAnalyticsTimeframe(e.target.value)}
+                  style={{
+                    padding: '0.5rem',
+                    borderRadius: '0.375rem',
+                    border: '1px solid #D1D5DB',
+                    fontSize: '0.875rem',
+                    backgroundColor: '#FFFFFF'
+                  }}
+                >
+                  <option value="7">Last 7 days</option>
+                  <option value="30">Last 30 days</option>
+                  <option value="90">Last 90 days</option>
+                  <option value="365">Last year</option>
+                </select>
+              </div>
+              
+              <div>
+                <button style={{
+                  padding: '0.5rem 1rem',
+                  backgroundColor: '#2563EB',
+                  color: '#FFFFFF',
+                  borderRadius: '0.375rem',
+                  fontSize: '0.875rem',
+                  fontWeight: '500',
+                  border: 'none',
+                  cursor: 'pointer',
+                  display: 'flex',
+                  alignItems: 'center',
+                  gap: '0.25rem'
+                }}>
+                  <span>📥</span>
+                  <span>Export Report</span>
+                </button>
+              </div>
+            </div>
+            
+            {/* Analytics Tabs */}
+            <div style={{ 
+              display: 'flex', 
+              borderBottom: '1px solid #e5e7eb', 
+              marginBottom: '1.5rem' 
+            }}>
+              {['overview', 'user activity', 'case progression', 'visa types', 'platform usage', 'geographic'].map(tab => (
+                <button
+                  key={tab}
+                  onClick={() => setActiveAnalyticsTab(tab)}
+                  style={{
+                    padding: '0.75rem 1rem',
+                    fontWeight: activeAnalyticsTab === tab ? '600' : '400',
+                    color: activeAnalyticsTab === tab ? '#2563eb' : '#6b7280',
+                    borderBottom: activeAnalyticsTab === tab ? '2px solid #2563eb' : 'none',
+                    background: 'none',
+                    border: 'none',
+                    cursor: 'pointer',
+                    textTransform: 'capitalize'
+                  }}
+                >
+                  {tab}
+                </button>
+              ))}
+            </div>
+            
+            {/* Content based on active tab will be implemented separately */}
+            {activeAnalyticsTab === 'overview' && (
+              <div>
+                {/* Key metrics row */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(240px, 1fr))',
+                  gap: '1rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  <div style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    border: '1px solid #E5E7EB',
+                    padding: '1.25rem'
+                  }}>
+                    <h3 style={{
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#6B7280',
+                      marginBottom: '0.5rem'
+                    }}>Active Users</h3>
+                    <div style={{
+                      fontSize: '1.5rem',
+                      fontWeight: '700',
+                      color: '#1F2937'
+                    }}>{analyticsData.userActivity.activeUsers[2].count}</div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      marginTop: '0.25rem'
+                    }}>
+                      <span style={{
+                        color: '#10B981',
+                        fontSize: '0.875rem',
+                        fontWeight: '500'
+                      }}>
+                        {analyticsData.userActivity.activeUsers[2].change}
+                      </span>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        color: '#6B7280',
+                        marginLeft: '0.25rem'
+                      }}>
+                        vs. previous period
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    border: '1px solid #E5E7EB',
+                    padding: '1.25rem'
+                  }}>
+                    <h3 style={{
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#6B7280',
+                      marginBottom: '0.5rem'
+                    }}>Total Cases</h3>
+                    <div style={{
+                      fontSize: '1.5rem',
+                      fontWeight: '700',
+                      color: '#1F2937'
+                    }}>{analyticsData.caseProgression.totalCases}</div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      marginTop: '0.25rem'
+                    }}>
+                      <span style={{
+                        color: '#10B981',
+                        fontSize: '0.875rem',
+                        fontWeight: '500'
+                      }}>
+                        +7.2%
+                      </span>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        color: '#6B7280',
+                        marginLeft: '0.25rem'
+                      }}>
+                        vs. previous period
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    border: '1px solid #E5E7EB',
+                    padding: '1.25rem'
+                  }}>
+                    <h3 style={{
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#6B7280',
+                      marginBottom: '0.5rem'
+                    }}>Approval Rate</h3>
+                    <div style={{
+                      fontSize: '1.5rem',
+                      fontWeight: '700',
+                      color: '#1F2937'
+                    }}>84.7%</div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      marginTop: '0.25rem'
+                    }}>
+                      <span style={{
+                        color: '#10B981',
+                        fontSize: '0.875rem',
+                        fontWeight: '500'
+                      }}>
+                        +1.3%
+                      </span>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        color: '#6B7280',
+                        marginLeft: '0.25rem'
+                      }}>
+                        vs. previous period
+                      </span>
+                    </div>
+                  </div>
+                  
+                  <div style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    border: '1px solid #E5E7EB',
+                    padding: '1.25rem'
+                  }}>
+                    <h3 style={{
+                      fontSize: '0.875rem',
+                      fontWeight: '500',
+                      color: '#6B7280',
+                      marginBottom: '0.5rem'
+                    }}>Avg. Processing Time</h3>
+                    <div style={{
+                      fontSize: '1.5rem',
+                      fontWeight: '700',
+                      color: '#1F2937'
+                    }}>{analyticsData.caseProgression.completionTime.overall} days</div>
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      marginTop: '0.25rem'
+                    }}>
+                      <span style={{
+                        color: '#10B981',
+                        fontSize: '0.875rem',
+                        fontWeight: '500'
+                      }}>
+                        -3.5 days
+                      </span>
+                      <span style={{
+                        fontSize: '0.75rem',
+                        color: '#6B7280',
+                        marginLeft: '0.25rem'
+                      }}>
+                        vs. previous period
+                      </span>
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Additional overview content would be added here */}
+              </div>
+            )}
+            
+            {activeAnalyticsTab === 'user activity' && (
+              <div>
+                {/* Active Users by Time Period */}
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  border: '1px solid #E5E7EB',
+                  padding: '1.5rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  <h3 style={{
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    color: '#1F2937',
+                    marginBottom: '1.25rem'
+                  }}>Active Users by Time Period</h3>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))',
+                    gap: '1.5rem'
+                  }}>
+                    {analyticsData.userActivity.activeUsers.map((item) => (
+                      <div key={item.period} style={{
+                        backgroundColor: '#F9FAFB',
+                        borderRadius: '0.5rem',
+                        padding: '1.25rem',
+                        border: '1px solid #E5E7EB'
+                      }}>
+                        <div style={{
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          color: '#6B7280',
+                          marginBottom: '0.5rem'
+                        }}>{item.period} Active Users</div>
+                        <div style={{
+                          fontSize: '1.5rem',
+                          fontWeight: '700',
+                          color: '#1F2937',
+                          marginBottom: '0.5rem'
+                        }}>{item.count}</div>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          <span style={{
+                            color: '#10B981',
+                            fontSize: '0.875rem',
+                            fontWeight: '500'
+                          }}>{item.change}</span>
+                          <span style={{
+                            fontSize: '0.75rem',
+                            color: '#6B7280',
+                            marginLeft: '0.25rem'
+                          }}>vs. previous period</span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+                
+                {/* New User Trend */}
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  border: '1px solid #E5E7EB',
+                  padding: '1.5rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  <h3 style={{
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    color: '#1F2937',
+                    marginBottom: '1.25rem'
+                  }}>New User Trend</h3>
+                  
+                  <div style={{
+                    height: '12rem',
+                    position: 'relative'
+                  }}>
+                    {/* Simple bar chart visualization */}
+                    <div style={{
+                      display: 'flex',
+                      height: '100%',
+                      alignItems: 'flex-end',
+                      gap: '1rem',
+                      paddingBottom: '2rem'
+                    }}>
+                      {analyticsData.userActivity.newUsers.map((item) => {
+                        // Calculate height percentage based on max value
+                        const maxCount = Math.max(...analyticsData.userActivity.newUsers.map(i => i.count));
+                        const heightPercentage = (item.count / maxCount) * 100;
+                        
+                        return (
+                          <div key={item.month} style={{
+                            display: 'flex',
+                            flexDirection: 'column',
+                            alignItems: 'center',
+                            flex: 1
+                          }}>
+                            <div style={{
+                              backgroundColor: '#3B82F6',
+                              width: '100%',
+                              height: `${heightPercentage}%`,
+                              borderRadius: '0.25rem 0.25rem 0 0'
+                            }}></div>
+                            <div style={{
+                              fontSize: '0.75rem',
+                              fontWeight: '500',
+                              color: '#6B7280',
+                              marginTop: '0.5rem',
+                              position: 'absolute',
+                              bottom: 0
+                            }}>{item.month}</div>
+                          </div>
+                        );
+                      })}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* User Session Metrics & Retention */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                  gap: '1.5rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  {/* Session Metrics */}
+                  <div style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    border: '1px solid #E5E7EB',
+                    padding: '1.5rem'
+                  }}>
+                    <h3 style={{
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      color: '#1F2937',
+                      marginBottom: '1.25rem'
+                    }}>Session Metrics</h3>
+                    
+                    <div style={{
+                      display: 'grid',
+                      gap: '1rem'
+                    }}>
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.75rem 0',
+                        borderBottom: '1px solid #E5E7EB'
+                      }}>
+                        <div style={{
+                          fontSize: '0.875rem',
+                          color: '#6B7280'
+                        }}>Average Session Duration</div>
+                        <div style={{
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          color: '#1F2937'
+                        }}>{analyticsData.userActivity.sessionMetrics.avgDuration}</div>
+                      </div>
+                      
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.75rem 0',
+                        borderBottom: '1px solid #E5E7EB'
+                      }}>
+                        <div style={{
+                          fontSize: '0.875rem',
+                          color: '#6B7280'
+                        }}>Pages per Session</div>
+                        <div style={{
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          color: '#1F2937'
+                        }}>{analyticsData.userActivity.sessionMetrics.pagesPerSession}</div>
+                      </div>
+                      
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center',
+                        padding: '0.75rem 0'
+                      }}>
+                        <div style={{
+                          fontSize: '0.875rem',
+                          color: '#6B7280'
+                        }}>Bounce Rate</div>
+                        <div style={{
+                          fontSize: '0.875rem',
+                          fontWeight: '600',
+                          color: '#1F2937'
+                        }}>{analyticsData.userActivity.sessionMetrics.bounceRate}</div>
+                      </div>
+                    </div>
+                  </div>
+                  
+                  {/* Retention Rate */}
+                  <div style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    border: '1px solid #E5E7EB',
+                    padding: '1.5rem'
+                  }}>
+                    <h3 style={{
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      color: '#1F2937',
+                      marginBottom: '1.25rem'
+                    }}>User Retention</h3>
+                    
+                    <div style={{
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      height: '10rem'
+                    }}>
+                      {/* Circular progress display */}
+                      <div style={{
+                        position: 'relative',
+                        width: '8rem',
+                        height: '8rem'
+                      }}>
+                        <svg width="100%" height="100%" viewBox="0 0 100 100">
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="45"
+                            fill="none"
+                            stroke="#E5E7EB"
+                            strokeWidth="10"
+                          />
+                          <circle
+                            cx="50"
+                            cy="50"
+                            r="45"
+                            fill="none"
+                            stroke="#10B981"
+                            strokeWidth="10"
+                            strokeDasharray={`${analyticsData.userActivity.userRetention.rate * 2.83} 283`}
+                            strokeDashoffset="0"
+                            strokeLinecap="round"
+                            transform="rotate(-90 50 50)"
+                          />
+                        </svg>
+                        <div style={{
+                          position: 'absolute',
+                          top: 0,
+                          left: 0,
+                          width: '100%',
+                          height: '100%',
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          flexDirection: 'column'
+                        }}>
+                          <div style={{
+                            fontSize: '1.5rem',
+                            fontWeight: '700',
+                            color: '#1F2937'
+                          }}>{analyticsData.userActivity.userRetention.rate}%</div>
+                          <div style={{
+                            fontSize: '0.75rem',
+                            color: '#6B7280'
+                          }}>Retention</div>
+                        </div>
+                      </div>
+                    </div>
+                    
+                    <div style={{
+                      display: 'flex',
+                      justifyContent: 'center',
+                      alignItems: 'center',
+                      marginTop: '1rem'
+                    }}>
+                      <span style={{
+                        fontSize: '0.875rem',
+                        color: '#6B7280'
+                      }}>Previous period:</span>
+                      <span style={{
+                        fontSize: '0.875rem',
+                        fontWeight: '600',
+                        color: '#1F2937',
+                        marginLeft: '0.5rem'
+                      }}>{analyticsData.userActivity.userRetention.previousRate}%</span>
+                      <span style={{
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#10B981',
+                        marginLeft: '0.5rem'
+                      }}>↑ {analyticsData.userActivity.userRetention.rate - analyticsData.userActivity.userRetention.previousRate}%</span>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {activeAnalyticsTab === 'case progression' && (
+              <div>
+                {/* Case progression content */}
+              </div>
+            )}
+            
+            {activeAnalyticsTab === 'visa types' && (
+              <div>
+                {/* Visa Type Distribution */}
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  border: '1px solid #E5E7EB',
+                  padding: '1.5rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  <h3 style={{
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    color: '#1F2937',
+                    marginBottom: '1.25rem'
+                  }}>Visa Type Distribution</h3>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                    gap: '2rem'
+                  }}>
+                    <div style={{
+                      flex: 2
+                    }}>
+                      {/* Visa type bars */}
+                      {analyticsData.visaTypeBreakdown.map((item) => (
+                        <div key={item.type} style={{ marginBottom: '1rem' }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            marginBottom: '0.25rem'
+                          }}>
+                            <div style={{
+                              fontSize: '0.875rem',
+                              color: '#4B5563'
+                            }}>{item.type}</div>
+                            <div style={{
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              color: '#1F2937'
+                            }}>{item.count} ({item.percentage}%)</div>
+                          </div>
+                          <div style={{
+                            height: '0.75rem',
+                            backgroundColor: '#E5E7EB',
+                            borderRadius: '9999px',
+                            overflow: 'hidden'
+                          }}>
+                            <div style={{
+                              height: '100%',
+                              width: `${item.percentage}%`,
+                              backgroundColor: getVisaTypeColor(item.type),
+                              borderRadius: '9999px'
+                            }}></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                    
+                    <div style={{
+                      flex: 1,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      {/* Pie chart visualization */}
+                      <div style={{
+                        width: '12rem',
+                        height: '12rem',
+                        borderRadius: '50%',
+                        background: `conic-gradient(
+                          #3B82F6 0% ${analyticsData.visaTypeBreakdown[0].percentage}%, 
+                          #EF4444 ${analyticsData.visaTypeBreakdown[0].percentage}% ${analyticsData.visaTypeBreakdown[0].percentage + analyticsData.visaTypeBreakdown[1].percentage}%, 
+                          #10B981 ${analyticsData.visaTypeBreakdown[0].percentage + analyticsData.visaTypeBreakdown[1].percentage}% ${analyticsData.visaTypeBreakdown[0].percentage + analyticsData.visaTypeBreakdown[1].percentage + analyticsData.visaTypeBreakdown[2].percentage}%, 
+                          #F59E0B ${analyticsData.visaTypeBreakdown[0].percentage + analyticsData.visaTypeBreakdown[1].percentage + analyticsData.visaTypeBreakdown[2].percentage}% ${analyticsData.visaTypeBreakdown[0].percentage + analyticsData.visaTypeBreakdown[1].percentage + analyticsData.visaTypeBreakdown[2].percentage + analyticsData.visaTypeBreakdown[3].percentage}%,
+                          #8B5CF6 ${analyticsData.visaTypeBreakdown[0].percentage + analyticsData.visaTypeBreakdown[1].percentage + analyticsData.visaTypeBreakdown[2].percentage + analyticsData.visaTypeBreakdown[3].percentage}% ${analyticsData.visaTypeBreakdown[0].percentage + analyticsData.visaTypeBreakdown[1].percentage + analyticsData.visaTypeBreakdown[2].percentage + analyticsData.visaTypeBreakdown[3].percentage + analyticsData.visaTypeBreakdown[4].percentage}%`,
+                        position: 'relative'
+                      }}>
+                        {/* Line chart visualization */}
+                        <div style={{
+                          display: 'flex',
+                          height: '100%',
+                          alignItems: 'flex-end',
+                          gap: '2rem',
+                          paddingBottom: '2rem',
+                          position: 'relative'
+                        }}>
+                          {analyticsData.caseProgression.trending.map((item, index) => {
+                            // Calculate height percentages
+                            const maxNewCases = Math.max(...analyticsData.caseProgression.trending.map(i => i.newCases));
+                            const maxCompletedCases = Math.max(...analyticsData.caseProgression.trending.map(i => i.completedCases));
+                            const maxValue = Math.max(maxNewCases, maxCompletedCases);
+                            
+                            const newCasesHeight = (item.newCases / maxValue) * 100;
+                            const completedCasesHeight = (item.completedCases / maxValue) * 100;
+                            
+                            return (
+                              <div key={item.week} style={{
+                                display: 'flex',
+                                flex: 1,
+                                height: '100%',
+                                position: 'relative'
+                              }}>
+                                <div style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'flex-end',
+                                  width: '100%',
+                                  marginTop: '0.5rem',
+                                }}>
+                                  {/* New cases bar */}
+                                  <div style={{
+                                    backgroundColor: '#3B82F6',
+                                    width: '45%',
+                                    height: `${newCasesHeight}%`,
+                                    borderRadius: '0.25rem 0 0 0.25rem',
+                                    marginRight: '2px'
+                                  }}></div>
+                                  
+                                  {/* X-axis label */}
+                                  <div style={{
+                                    fontSize: '0.75rem',
+                                    fontWeight: '500',
+                                    color: '#6B7280',
+                                    marginTop: '0.5rem',
+                                    position: 'absolute',
+                                    bottom: '-1.5rem',
+                                    textAlign: 'center',
+                                    width: '100%'
+                                  }}>{item.week}</div>
+                                </div>
+                                
+                                <div style={{
+                                  display: 'flex',
+                                  flexDirection: 'column',
+                                  justifyContent: 'flex-end',
+                                  width: '100%',
+                                  marginTop: '0.5rem'
+                                }}>
+                                  {/* Completed cases bar */}
+                                  <div style={{
+                                    backgroundColor: '#10B981',
+                                    width: '45%',
+                                    height: `${completedCasesHeight}%`,
+                                    borderRadius: '0 0.25rem 0.25rem 0',
+                                    marginLeft: '2px'
+                                  }}></div>
+                                </div>
+                              </div>
+                            );
+                          })}
+                        </div>
+                      </div>
+                      
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'center',
+                        marginTop: '1rem',
+                        gap: '2rem'
+                      }}>
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          <div style={{
+                            width: '0.75rem',
+                            height: '0.75rem',
+                            backgroundColor: '#3B82F6',
+                            borderRadius: '0.125rem',
+                            marginRight: '0.5rem'
+                          }}></div>
+                          <span style={{
+                            fontSize: '0.875rem',
+                            color: '#6B7280'
+                          }}>New Cases</span>
+                        </div>
+                        
+                        <div style={{
+                          display: 'flex',
+                          alignItems: 'center'
+                        }}>
+                          <div style={{
+                            width: '0.75rem',
+                            height: '0.75rem',
+                            backgroundColor: '#10B981',
+                            borderRadius: '0.125rem',
+                            marginRight: '0.5rem'
+                          }}></div>
+                          <span style={{
+                            fontSize: '0.875rem',
+                            color: '#6B7280'
+                          }}>Completed Cases</span>
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+            
+            {activeAnalyticsTab === 'platform usage' && (
+              <div>
+                {/* Device & Browser Distribution */}
+                <div style={{
+                  display: 'grid',
+                  gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+                  gap: '1.5rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  {/* Device Distribution */}
+                  <div style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    border: '1px solid #E5E7EB',
+                    padding: '1.5rem'
+                  }}>
+                    <h3 style={{
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      color: '#1F2937',
+                      marginBottom: '1.25rem'
+                    }}>Device Distribution</h3>
+                    
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem'
+                    }}>
+                      {analyticsData.platformUsage.deviceDistribution.map((item) => (
+                        <div key={item.device} style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.25rem'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
+                              <span style={{
+                                fontSize: '1rem',
+                                marginRight: '0.5rem'
+                              }}>
+                                {item.device === 'Desktop' ? '💻' : 
+                                 item.device === 'Mobile' ? '📱' : '📱'}
+                              </span>
+                              <span style={{
+                                fontSize: '0.875rem',
+                                color: '#4B5563'
+                              }}>{item.device}</span>
+                            </div>
+                            <div style={{
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              color: '#1F2937'
+                            }}>{item.percentage}%</div>
+                          </div>
+                          <div style={{
+                            height: '0.5rem',
+                            backgroundColor: '#E5E7EB',
+                            borderRadius: '9999px',
+                            overflow: 'hidden'
+                          }}>
+                            <div style={{
+                              height: '100%',
+                              width: `${item.percentage}%`,
+                              backgroundColor: item.device === 'Desktop' ? '#3B82F6' : 
+                                              item.device === 'Mobile' ? '#F59E0B' : '#8B5CF6',
+                              borderRadius: '9999px'
+                            }}></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                  
+                  {/* Browser Distribution */}
+                  <div style={{
+                    backgroundColor: '#FFFFFF',
+                    borderRadius: '0.5rem',
+                    boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                    border: '1px solid #E5E7EB',
+                    padding: '1.5rem'
+                  }}>
+                    <h3 style={{
+                      fontSize: '1rem',
+                      fontWeight: '600',
+                      color: '#1F2937',
+                      marginBottom: '1.25rem'
+                    }}>Browser Distribution</h3>
+                    
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      gap: '1rem'
+                    }}>
+                      {analyticsData.platformUsage.browserDistribution.map((item) => (
+                        <div key={item.browser} style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.25rem'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <div style={{
+                              fontSize: '0.875rem',
+                              color: '#4B5563'
+                            }}>{item.browser}</div>
+                            <div style={{
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              color: '#1F2937'
+                            }}>{item.percentage}%</div>
+                          </div>
+                          <div style={{
+                            height: '0.5rem',
+                            backgroundColor: '#E5E7EB',
+                            borderRadius: '9999px',
+                            overflow: 'hidden'
+                          }}>
+                            <div style={{
+                              height: '100%',
+                              width: `${item.percentage}%`,
+                              backgroundColor: getBrowserColor(item.browser),
+                              borderRadius: '9999px'
+                            }}></div>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </div>
+                </div>
+                
+                {/* Top Features */}
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  border: '1px solid #E5E7EB',
+                  padding: '1.5rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  <h3 style={{
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    color: '#1F2937',
+                    marginBottom: '1.25rem'
+                  }}>Most Used Features</h3>
+                  
+                  <div style={{
+                    display: 'flex',
+                    flexDirection: 'column',
+                    gap: '1rem'
+                  }}>
+                    {analyticsData.platformUsage.topFeatures.map((item, index) => {
+                      const maxUsage = Math.max(...analyticsData.platformUsage.topFeatures.map(i => i.usageCount));
+                      const percentage = (item.usageCount / maxUsage) * 100;
+                      
+                      return (
+                        <div key={item.feature} style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          gap: '0.25rem'
+                        }}>
+                          <div style={{
+                            display: 'flex',
+                            justifyContent: 'space-between',
+                            alignItems: 'center'
+                          }}>
+                            <div style={{
+                              display: 'flex',
+                              alignItems: 'center'
+                            }}>
+                              <span style={{
+                                fontWeight: '600',
+                                color: '#6B7280',
+                                fontSize: '0.875rem',
+                                marginRight: '0.5rem'
+                              }}>
+                                {index + 1}.
+                              </span>
+                              <span style={{
+                                fontSize: '0.875rem',
+                                color: '#4B5563'
+                              }}>{item.feature}</span>
+                            </div>
+                            <div style={{
+                              fontSize: '0.875rem',
+                              fontWeight: '500',
+                              color: '#1F2937'
+                            }}>{item.usageCount.toLocaleString()}</div>
+                          </div>
+                          <div style={{
+                            height: '0.75rem',
+                            backgroundColor: '#E5E7EB',
+                            borderRadius: '9999px',
+                            overflow: 'hidden'
+                          }}>
+                            <div style={{
+                              height: '100%',
+                              width: `${percentage}%`,
+                              backgroundColor: '#3B82F6',
+                              borderRadius: '9999px'
+                            }}></div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                  </div>
+                </div>
+                
+                {/* User Feedback */}
+                <div style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  border: '1px solid #E5E7EB',
+                  padding: '1.5rem',
+                  marginBottom: '1.5rem'
+                }}>
+                  <h3 style={{
+                    fontSize: '1rem',
+                    fontWeight: '600',
+                    color: '#1F2937',
+                    marginBottom: '1.25rem'
+                  }}>User Feedback</h3>
+                  
+                  <div style={{
+                    display: 'grid',
+                    gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+                    gap: '2rem'
+                  }}>
+                    <div style={{
+                      display: 'flex',
+                      flexDirection: 'column',
+                      alignItems: 'center',
+                      justifyContent: 'center'
+                    }}>
+                      <div style={{
+                        fontSize: '0.875rem',
+                        color: '#6B7280',
+                        marginBottom: '0.5rem'
+                      }}>Average User Rating</div>
+                      <div style={{
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '0.25rem',
+                        marginBottom: '0.5rem'
+                      }}>
+                        {'★★★★☆'.slice(0, Math.round(analyticsData.platformUsage.userFeedback.averageRating)) + 
+                         '☆☆☆☆☆'.slice(0, 5 - Math.round(analyticsData.platformUsage.userFeedback.averageRating))}
+                      </div>
+                      <div style={{
+                        fontSize: '2rem',
+                        fontWeight: '700',
+                        color: '#1F2937'
+                      }}>{analyticsData.platformUsage.userFeedback.averageRating}</div>
+                      <div style={{
+                        fontSize: '0.875rem',
+                        color: '#6B7280',
+                        marginTop: '0.5rem'
+                      }}>out of 5.0</div>
+                      <div style={{
+                        fontSize: '0.875rem',
+                        color: '#10B981',
+                        marginTop: '0.5rem',
+                        fontWeight: '500'
+                      }}>
+                        {/* Additional tabs content would be implemented separately */}
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              </div>
+            )}
+          </div>
+        );
+      default:
+        return (
+          <>
+            {/* Quick Actions */}
+            <div style={{
+              marginBottom: '1.5rem',
+              backgroundColor: '#FFFFFF',
+              borderRadius: '0.5rem',
+              boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+              border: '1px solid #E5E7EB',
+              padding: '1.5rem'
+            }}>
+              <h2 style={{
+                fontWeight: '600',
+                color: '#1F2937',
+                marginBottom: '1rem'
+              }}>Quick Actions</h2>
+              <div style={{
+                display: 'flex',
+                flexWrap: 'wrap',
+                gap: '0.75rem'
+              }}>
+                <ActionButton icon="📄" text="Review Documents" />
+                <ActionButton icon="🔔" text="Send Notifications" />
+                <ActionButton icon="👤" text="Add New User" />
+                <ActionButton icon="🛡️" text="Compliance Report" />
+              </div>
+            </div>
+
+            {/* Metrics */}
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))',
+              gap: '1.5rem', 
+              marginBottom: '1.5rem'
+            }}>
+              {metrics.map((metric) => (
+                <div key={metric.id} style={{
+                  backgroundColor: '#FFFFFF',
+                  borderRadius: '0.5rem',
+                  boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                  border: `1px solid ${metric.borderColor}`,
+                  padding: '1.5rem'
+                }}>
+                  <div style={{
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'flex-start'
+                  }}>
+                    <div>
+                      <p style={{
+                        fontSize: '0.875rem',
+                        fontWeight: '500',
+                        color: '#6B7280'
+                      }}>{metric.title}</p>
+                      <h3 style={{
+                        fontSize: '1.5rem',
+                        fontWeight: '700',
+                        marginTop: '0.25rem',
+                        color: metric.textColor
+                      }}>{metric.value}</h3>
+                    </div>
+                    <span style={{
+                      fontSize: '0.75rem',
+                      padding: '0.25rem 0.5rem',
+                      borderRadius: '9999px',
+                      backgroundColor: metric.color,
+                      color: metric.textColor
+                    }}>
+                      {metric.change}
+                    </span>
+                  </div>
+                </div>
+              ))}
+            </div>
+            
+            <div style={{
+              display: 'grid',
+              gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))',
+              gap: '1.5rem'
+            }}>
+              {/* Recent Activity */}
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '0.5rem',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                border: '1px solid #E5E7EB',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  padding: '1rem 1.5rem',
+                  borderBottom: '1px solid #E5E7EB',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <h2 style={{
+                    fontWeight: '600',
+                    color: '#1F2937'
+                  }}>Recent Activity</h2>
+                  <button style={{
+                    fontSize: '0.875rem',
+                    color: '#2563EB',
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer'
+                  }}>View All</button>
+                </div>
+                <div>
+                  {recentActivity.map((activity) => (
+                    <div key={activity.id} style={{
+                      padding: '1rem 1.5rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      borderBottom: '1px solid #E5E7EB'
+                    }}>
+                      <ActivityIcon status={activity.status} />
+                      <div style={{
+                        marginLeft: '1rem',
+                        flex: '1'
+                      }}>
+                        <p style={{
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          color: '#1F2937'
+                        }}>
+                          <span style={{fontWeight: '600'}}>{activity.user}</span> {activity.action}
+                        </p>
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: '#6B7280'
+                        }}>{activity.time}</p>
+                      </div>
+                      <button style={{
+                        fontSize: '0.875rem',
+                        color: '#2563EB',
+                        border: 'none',
+                        background: 'none',
+                        cursor: 'pointer'
+                      }}>View</button>
+                    </div>
+                  ))}
+                </div>
+              </div>
+              
+              {/* Upcoming Deadlines */}
+              <div style={{
+                backgroundColor: '#FFFFFF',
+                borderRadius: '0.5rem',
+                boxShadow: '0 1px 2px 0 rgba(0, 0, 0, 0.05)',
+                border: '1px solid #E5E7EB',
+                overflow: 'hidden'
+              }}>
+                <div style={{
+                  padding: '1rem 1.5rem',
+                  borderBottom: '1px solid #E5E7EB',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center'
+                }}>
+                  <h2 style={{
+                    fontWeight: '600',
+                    color: '#1F2937'
+                  }}>Upcoming Deadlines</h2>
+                  <button style={{
+                    fontSize: '0.875rem',
+                    color: '#2563EB',
+                    border: 'none',
+                    background: 'none',
+                    cursor: 'pointer'
+                  }}>View All</button>
+                </div>
+                <div>
+                  {upcomingDeadlines.map((deadline) => (
+                    <div key={deadline.id} style={{
+                      padding: '1rem 1.5rem',
+                      display: 'flex',
+                      alignItems: 'center',
+                      borderBottom: '1px solid #E5E7EB'
+                    }}>
+                      <PriorityIcon priority={deadline.priority} />
+                      <div style={{
+                        marginLeft: '1rem',
+                        flex: '1'
+                      }}>
+                        <p style={{
+                          fontSize: '0.875rem',
+                          fontWeight: '500',
+                          color: '#1F2937'
+                        }}>{deadline.event}</p>
+                        <p style={{
+                          fontSize: '0.75rem',
+                          color: '#6B7280'
+                        }}>{deadline.date}</p>
+                      </div>
+                      <PriorityBadge priority={deadline.priority} />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            </div>
+          </>
+        );
+    }
+  };
+
+  return (
+    <div style={{
+      display: 'flex',
+      height: '100vh',
+      backgroundColor: '#F9FAFB'
+    }}>
+      {/* Sidebar */}
+      <div style={{
+        backgroundColor: '#FFFFFF',
+        borderRight: '1px solid #E5E7EB',
+        transition: 'all 0.3s',
+        width: collapsed ? '4rem' : '16rem'
+      }}>
+        <div style={{
+          padding: '1rem',
+          display: 'flex',
+          alignItems: 'center',
+          justifyContent: 'space-between',
+          borderBottom: '1px solid #E5E7EB'
+        }}>
+          {!collapsed && <span style={{
+            fontSize: '1.125rem',
+            fontWeight: '600',
+            color: '#2563EB'
+          }}>ImmiHub Admin</span>}
+          <button onClick={toggleSidebar} style={{
+            padding: '0.25rem',
+            borderRadius: '0.375rem',
+            border: 'none',
+            background: 'none',
+            cursor: 'pointer'
+          }}>
+            {collapsed ? '☰' : '✕'}
+          </button>
+        </div>
+
+        <nav style={{
+          marginTop: '1rem'
+        }}>
+          <NavItem
+            icon="🏠"
+            text="Dashboard"
+            active={activeSection === 'dashboard'}
+            collapsed={collapsed}
+            onClick={() => setActiveSection('dashboard')}
+          />
+          <NavItem
+            icon="📚"
+            text="Journey Management"
+            active={activeSection === 'journey-management'}
+            collapsed={collapsed}
+            onClick={() => setActiveSection('journey-management')}
+          />
+          <NavItem
+            icon="🤝"
+            text="Partner Integrations"
+            active={activeSection === 'partner-integrations'}
+            collapsed={collapsed}
+            onClick={() => setActiveSection('partner-integrations')}
+          />
+          <NavItem
+            icon="📊"
+            text="Analytics"
+            active={activeSection === 'analytics'}
+            collapsed={collapsed}
+            onClick={() => setActiveSection('analytics')}
+          />
+          <NavItem
+            icon="🛡️"
+            text="Compliance"
+            active={activeSection === 'compliance'}
+            collapsed={collapsed}
+            onClick={() => setActiveSection('compliance')}
+          />
+          <NavItem
+            icon="👥"
+            text="Social Media Groups Management"
+            active={activeSection === 'social-media-groups'}
+            collapsed={collapsed}
+            onClick={() => setActiveSection('social-media-groups')}
+          />
+          <NavItem
+            icon="💬"
+            text="User Comments"
+            active={activeSection === 'user-comments'}
+            collapsed={collapsed}
+            onClick={() => setActiveSection('user-comments')}
+          />
+          <NavItem
+            icon="⚙️"
+            text="Settings"
+            active={activeSection === 'settings'}
+            collapsed={collapsed}
+            onClick={() => setActiveSection('settings')}
+          />
+          <NavItem
+            icon="🏠"
+            text="Portal Home"
+            collapsed={collapsed}
+            onClick={() => window.location.href = '/'}
+          />
+        </nav>
+
+        <div style={{
+          position: 'absolute',
+          bottom: '0',
+          width: collapsed ? '4rem' : '16rem',
+          borderTop: '1px solid #E5E7EB',
+          padding: '1rem'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: collapsed ? 'center' : 'flex-start'
+          }}>
+            {collapsed ? (
+              <div style={{
+                width: '2rem',
+                height: '2rem',
+                borderRadius: '9999px',
+                backgroundColor: '#EBF5FF',
+                display: 'flex',
+                alignItems: 'center',
+                justifyContent: 'center',
+                color: '#2563EB',
+                fontWeight: '600'
+              }}>A</div>
+            ) : (
+              <>
+                <div style={{
+                  width: '2rem',
+                  height: '2rem',
+                  borderRadius: '9999px',
+                  backgroundColor: '#EBF5FF',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center',
+                  color: '#2563EB',
+                  fontWeight: '600'
+                }}>A</div>
+                <div style={{
+                  marginLeft: '0.5rem'
+                }}>
+                  <div style={{
+                    fontSize: '0.875rem',
+                    fontWeight: '500',
+                    color: '#374151'
+                  }}>Admin User</div>
+                  <div style={{
+                    fontSize: '0.75rem',
+                    color: '#6B7280'
+                  }}>admin@immihub.com</div>
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      </div>
+
+      {/* Main Content */}
+      <div style={{
+        flex: '1',
+        display: 'flex',
+        flexDirection: 'column',
+        overflow: 'hidden'
+      }}>
+        {/* Top Navigation */}
+        <header style={{
+          backgroundColor: '#FFFFFF',
+          borderBottom: '1px solid #E5E7EB'
+        }}>
+          <div style={{
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'space-between',
+            padding: '1rem'
+          }}>
+            <h1 style={{
+              fontSize: '1.25rem',
+              fontWeight: '600',
+              color: '#1F2937'
+            }}>Admin Dashboard</h1>
+            <div style={{
+              display: 'flex',
+              alignItems: 'center',
+              gap: '1rem'
+            }}>
+              <button style={{
+                padding: '0.5rem',
+                borderRadius: '9999px',
+                position: 'relative',
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer'
+              }}>
+                🔔
+                <span style={{
+                  position: 'absolute',
+                  top: '0.25rem',
+                  right: '0.25rem',
+                  width: '0.5rem',
+                  height: '0.5rem',
+                  backgroundColor: '#EF4444',
+                  borderRadius: '9999px'
+                }}></span>
+              </button>
+              <button style={{
+                padding: '0.5rem',
+                borderRadius: '9999px',
+                border: 'none',
+                background: 'none',
+                cursor: 'pointer'
+              }}>
+                👤
+              </button>
+            </div>
+          </div>
+        </header>
+
+        {/* Dashboard Content */}
+        <main style={{
+          flex: '1',
+          overflowY: 'auto',
+          padding: '1.5rem',
+          backgroundColor: '#F9FAFB'
+        }}>
+          {renderContent()}
+        </main>
+      </div>
+    </div>
+  );
+}
+
+function ActionButton({ icon, text, onClick }) {
+  return (
+    <button 
+      style={{
+        padding: '0.5rem 1rem',
+        backgroundColor: '#2563EB',
+        color: '#FFFFFF',
+        borderRadius: '0.375rem',
+        display: 'flex',
+        alignItems: 'center',
+        cursor: 'pointer',
+        border: 'none'
+      }}
+      onClick={onClick}
+    >
+      <span style={{
+        fontSize: '1rem',
+        marginRight: '0.5rem'
+      }}>{icon}</span>
+      {text}
+    </button>
+  );
+}
+
+function ActivityIcon({ status }) {
+  const iconStyles = {
+    width: '2.5rem',
+    height: '2.5rem',
+    borderRadius: '9999px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '1rem'
+  };
+
+  switch (status) {
+    case 'pending':
+      return (
+        <div style={{
+          ...iconStyles,
+          backgroundColor: '#FFF7ED',
+          color: '#EA580C'
+        }}>⚠️</div>
+      );
+    case 'in-review':
+      return (
+        <div style={{
+          ...iconStyles,
+          backgroundColor: '#EBF5FF',
+          color: '#2563EB'
+        }}>📄</div>
+      );
+    case 'resolved':
+      return (
+        <div style={{
+          ...iconStyles,
+          backgroundColor: '#ECFDF5',
+          color: '#059669'
+        }}>✅</div>
+      );
+    case 'completed':
+      return (
+        <div style={{
+          ...iconStyles,
+          backgroundColor: '#F5F3FF',
+          color: '#7C3AED'
+        }}>👥</div>
+      );
+    default:
+      return null;
+  }
+}
+
+function PriorityIcon({ priority }) {
+  const iconStyles = {
+    width: '2.5rem',
+    height: '2.5rem',
+    borderRadius: '9999px',
+    display: 'flex',
+    alignItems: 'center',
+    justifyContent: 'center',
+    fontSize: '1rem'
+  };
+
+  switch (priority) {
+    case 'high':
+      return (
+        <div style={{
+          ...iconStyles,
+          backgroundColor: '#FEE2E2',
+          color: '#DC2626'
+        }}>📅</div>
+      );
+    case 'medium':
+      return (
+        <div style={{
+          ...iconStyles,
+          backgroundColor: '#FFF7ED',
+          color: '#EA580C'
+        }}>📅</div>
+      );
+    case 'low':
+      return (
+        <div style={{
+          ...iconStyles,
+          backgroundColor: '#EBF5FF',
+          color: '#2563EB'
+        }}>📅</div>
+      );
+    default:
+      return null;
+  }
+}
+
+function PriorityBadge({ priority }) {
+  const badgeStyles = {
+    fontSize: '0.75rem',
+    padding: '0.25rem 0.5rem',
+    borderRadius: '9999px'
+  };
+
+  switch (priority) {
+    case 'high':
+      return (
+        <span style={{
+          ...badgeStyles,
+          backgroundColor: '#FEE2E2',
+          color: '#DC2626'
+        }}>
+          high
+        </span>
+      );
+    case 'medium':
+      return (
+        <span style={{
+          ...badgeStyles,
+          backgroundColor: '#FFF7ED',
+          color: '#EA580C'
+        }}>
+          medium
+        </span>
+      );
+    case 'low':
+      return (
+        <span style={{
+          ...badgeStyles,
+          backgroundColor: '#EBF5FF',
+          color: '#2563EB'
+        }}>
+          low
+        </span>
+      );
+    default:
+      return null;
+  }
+}
+
+// Helper function for platform icons
+function getPlatformIcon(platform) {
+  switch (platform) {
+    case 'Facebook':
+      return <span style={{ color: '#1877F2' }}>ⓕ</span>;
+    case 'LinkedIn':
+      return <span style={{ color: '#0A66C2' }}>ⓘⓝ</span>;
+    case 'WhatsApp':
+      return <span style={{ color: '#25D366' }}>✆</span>;
+    case 'Telegram':
+      return <span style={{ color: '#0088CC' }}>✈</span>;
+    case 'Twitter':
+      return <span style={{ color: '#1DA1F2' }}>ⓧ</span>;
+    case 'Discord':
+      return <span style={{ color: '#5865F2' }}>Ⓓ</span>;
+    case 'Reddit':
+      return <span style={{ color: '#FF4500' }}>ⓡ</span>;
+    default:
+      return <span>●</span>;
+  }
+}
+
+// Helper function for engagement background color
+function getEngagementBackground(level) {
+  switch (level) {
+    case 'High': return '#ECFDF5';
+    case 'Medium': return '#EFF6FF';
+    case 'Low': return '#FEF3C7';
+    default: return '#F3F4F6';
+  }
+}
+
+// Helper function for engagement text color
+function getEngagementColor(level) {
+  switch (level) {
+    case 'High': return '#059669';
+    case 'Medium': return '#2563EB';
+    case 'Low': return '#D97706';
+    default: return '#6B7280';
+  }
+}
+
+// Helper function for comment status background colors
+function getStatusBackground(status) {
+  switch (status) {
+    case 'Active': return '#ECFDF5';
+    case 'Flagged': return '#FEF3C7';
+    case 'Removed': return '#FEE2E2';
+    default: return '#F3F4F6';
+  }
+}
+
+// Helper function for comment status text colors
+function getStatusColor(status) {
+  switch (status) {
+    case 'Active': return '#059669';
+    case 'Flagged': return '#D97706';
+    case 'Removed': return '#DC2626';
+    default: return '#6B7280';
+  }
+} 
